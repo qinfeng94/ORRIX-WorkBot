@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "deny": [
+      "Write(.fde/**)",
+      "Edit(.fde/**)",
+      "Write(**/.env*)",
+      "Write(**/*.pem)",
+      "Write(**/*.key)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm exec eslint --fix --no-warn-ignored $CLAUDE_FILE_PATHS 2>$null; exit 0",
+            "timeout": 30
+          }
+        ]
+      },
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "pnpm exec tsc --noEmit --pretty false 2>$null; exit 0",
+            "timeout": 60
+          }
+        ]
+      }
+    ]
+  }
+}
