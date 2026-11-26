@@ -1,0 +1,1 @@
+{"ts":"2026-11-26T16:56:30.909Z","event":"shadow_comparison","runId":"SHADOW-01-1795712190909","round":1,"matched":17,"total":20,"consistencyRate":0.85,"aliasKnowledgeApplied":false,"botExtraIntercepted":71400,"divergences":[{"id":"SH-3805","winner":"bot","amount":59400},{"id":"SH-3806","winner":"bot","amount":12000},{"id":"SH-3811","winner":"human","amount":9900}]}
