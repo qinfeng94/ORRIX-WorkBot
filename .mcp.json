@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "postgres": {
+      "command": "npx",
+      "args": ["-y", "@henkey/postgres-server"],
+      "env": {
+        "DATABASE_URL": "${DATABASE_URL}"
+      }
+    },
+    "posthog": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "https://mcp.posthog.com/mcp"]
+    }
+  }
+}
