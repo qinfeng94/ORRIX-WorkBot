@@ -8,7 +8,7 @@
  * 一、请求与元信息
  * ================================================================ */
 
-export type WorkbotFlow = "chat" | "investigate" | "research" | "multiagent" | "workflow" | "docintake";
+export type WorkbotFlow = "chat" | "investigate" | "research" | "multiagent" | "workflow" | "docintake" | "analytics";
 
 export interface ConversationTurn {
   role: "user" | "assistant";
