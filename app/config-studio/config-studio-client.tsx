@@ -10,6 +10,7 @@ import { useEffect, useMemo, useState } from "react";
 import type { TenantConfig } from "@/lib/ontology/tenant-config";
 import PublishWizard from "./publish-wizard";
 import RuleLab from "./rule-lab";
+import ByokConsole from "./byok-console";
 
 /** 红线动作中文映射 */
 const ACTION_LABELS: Readonly<Record<string, string>> = {
@@ -226,6 +227,8 @@ export default function ConfigStudioClient() {
         </section>
 
         <RuleLab cfg={cfg} />
+
+        <ByokConsole />
 
         <PublishWizard templates={tenants} onPublished={handlePublished} />
 

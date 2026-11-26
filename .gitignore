@@ -36,6 +36,9 @@ yarn-error.log*
 # local embedded postgres data dir
 /.pgdata/
 
+# Day 36 BYOK 密钥仓：客户 KEK 材料与密钥状态严禁入库（AGENTS.md 代码红线 2）
+/data/day36/
+
 # vercel
 .vercel
 

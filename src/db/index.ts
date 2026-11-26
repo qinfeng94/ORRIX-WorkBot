@@ -44,6 +44,14 @@ export function getDb(): WorkBotDatabase {
   return drizzle(getClient(), { schema });
 }
 
+/**
+ * Day 39 只读分析代理专用：暴露底层 postgres.Sql 客户端（仅用于只读角色 bootstrap，
+ * 管理面操作与业务查询一律走 getDb() / 专用只读连接，不经过此函数）。
+ */
+export function getRawSqlClient(): postgres.Sql {
+  return getClient();
+}
+
 export { schema };
 
 /**
@@ -232,6 +240,22 @@ const CREATE_TABLES_SQL = `
     result     jsonb,
     created_at timestamptz NOT NULL DEFAULT now()
   );
+
+  -- Day 36 BYOK 信封加密：敏感单据密文库（敏感字段只存信封密文，明文永不落库；
+  -- 派生演示数据非审计日志，允许按 (tenant_id, ticket_no) 幂等补种）
+  CREATE TABLE IF NOT EXISTS byok_secure_docs (
+    id         serial PRIMARY KEY,
+    tenant_id  text NOT NULL,
+    ticket_no  text NOT NULL,
+    department text NOT NULL DEFAULT '',
+    amount     integer NOT NULL DEFAULT 0,
+    summary    text NOT NULL DEFAULT '',
+    envelope   jsonb NOT NULL,
+    key_fp     text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now()
+  );
+  CREATE UNIQUE INDEX IF NOT EXISTS uq_byok_secure_docs_ticket
+    ON byok_secure_docs (tenant_id, ticket_no);
 
   -- Day 19 提示词版本管理表（配置表：可切换激活，历史版本永不删除）
   CREATE TABLE IF NOT EXISTS prompt_versions (

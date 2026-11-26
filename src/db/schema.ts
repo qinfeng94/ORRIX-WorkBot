@@ -13,6 +13,7 @@ import {
   serial,
   text,
   timestamp,
+  uniqueIndex,
 } from "drizzle-orm/pg-core";
 
 /**
@@ -479,6 +480,39 @@ export const mcpTasks = pgTable("mcp_tasks", {
     .notNull()
     .defaultNow(),
 });
+
+/**
+ * Day 36 BYOK 信封加密 · 敏感单据密文库（WorkBot 自己的派生演示数据，非审计日志）
+ * 边界：敏感字段（姓名 / 账号）只存信封密文（envelope jsonb），明文永不落库；
+ *      元数据（单号 / 部门 / 金额 / 摘要）为非 PII 明文，供列表检索；
+ *      拔钥匙（KEK 吊销）后本表全部行对该租户拒绝解密，业务表 intake_requests 零改动。
+ */
+export const byokSecureDocs = pgTable("byok_secure_docs", {
+  /** 自增主键 */
+  id: serial("id").primaryKey(),
+  /** 租户 ID（信封 AAD 同时绑定租户与单号，密文挪行即解密失败） */
+  tenantId: text("tenant_id").notNull(),
+  /** 单据编号（业务主键；与 tenant_id 组成唯一键） */
+  ticketNo: text("ticket_no").notNull(),
+  /** 所属部门（非 PII 明文元数据） */
+  department: text("department").notNull().default(""),
+  /** 金额（元，整数口径，非 PII 明文元数据） */
+  amount: integer("amount").notNull().default(0),
+  /** 异常摘要（非 PII 明文元数据） */
+  summary: text("summary").notNull().default(""),
+  /** 信封密文（wrapped DEK + AES-256-GCM 内容密文，结构见 byok-kms.ts EnvelopeBlob） */
+  envelope: jsonb("envelope").$type<Record<string, unknown>>().notNull(),
+  /** 加密时 KEK 指纹（SHA-256 hex，审计口径） */
+  keyFp: text("key_fp").notNull().default(""),
+  /** 入档时间 */
+  createdAt: timestamp("created_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+}, (table) => [
+  uniqueIndex("uq_byok_secure_docs_ticket").on(table.tenantId, table.ticketNo),
+]);
+
+export type ByokSecureDocRow = typeof byokSecureDocs.$inferSelect;
 
 /** 单据明细行（算术校验数据源） */
 export interface WorkflowLineItem {
