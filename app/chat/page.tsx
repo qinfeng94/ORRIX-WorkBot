@@ -12,6 +12,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { buildInjectPreview, selectInjectableFacts } from "@/lib/memory";
 import type { ChatSseEvent } from "@/lib/chat-engine";
+import SegmentedControl from "../components/ui/SegmentedControl";
 
 /* ---------------- 类型 ---------------- */
 
@@ -132,8 +133,8 @@ function DiffRows({
   return (
     <div className="mb-2 space-y-1 font-mono text-xs">
       {changedKeys.map((k) => (
-        <p key={k} className="text-zinc-600">
-          <span className="text-zinc-400">{k}：</span>
+        <p key={k} className="text-ink-2">
+          <span className="text-ink-3">{k}：</span>
           {JSON.stringify(before[k])}
           <span className="mx-1 text-amber-600">→</span>
           <span className="font-semibold text-amber-800">{JSON.stringify(after[k])}</span>
@@ -373,9 +374,9 @@ function MemoryPanel({
       </div>
 
       {/* ② 语义记忆：部门偏好与称呼风格 */}
-      <div className="rounded-xl border border-zinc-200 bg-white p-3">
+      <div className="rounded-xl border border-hairline bg-white p-3">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-xs font-semibold text-zinc-700">🧠 语义记忆（偏好）</p>
+          <p className="text-xs font-semibold text-ink">🧠 语义记忆（偏好）</p>
           {preference && (
             <button
               onClick={() => void deletePreference()}
@@ -391,24 +392,24 @@ function MemoryPanel({
             value={nameDraft}
             onChange={(e) => setNameDraft(e.target.value)}
             placeholder="称呼（如：王经理）"
-            className="w-full rounded-lg border border-zinc-300 px-2 py-1 text-xs"
+            className="w-full rounded-lg border border-hairline px-2 py-1 text-xs"
           />
           <input
             value={deptDraft}
             onChange={(e) => setDeptDraft(e.target.value)}
             placeholder="常关注部门（如：财务部）"
-            className="w-full rounded-lg border border-zinc-300 px-2 py-1 text-xs"
+            className="w-full rounded-lg border border-hairline px-2 py-1 text-xs"
           />
           <input
             value={styleDraft}
             onChange={(e) => setStyleDraft(e.target.value)}
             placeholder="称呼风格（如：正式敬语）"
-            className="w-full rounded-lg border border-zinc-300 px-2 py-1 text-xs"
+            className="w-full rounded-lg border border-hairline px-2 py-1 text-xs"
           />
         </div>
 
         {/* 事实清单：逐条切换 / 编辑 / 删除 / 新增 */}
-        <p className="mt-2 mb-1 text-xs font-semibold text-zinc-500">
+        <p className="mt-2 mb-1 text-xs font-semibold text-ink-2">
           已记住的事实（{String(factsDraft.length)} 条 · {String(activeFacts.length)} 条启用中）
         </p>
         <div className="space-y-1">
@@ -418,7 +419,7 @@ function MemoryPanel({
               <div
                 key={`${fact}-${String(idx)}`}
                 className={`flex items-start gap-1 rounded-lg px-2 py-1 ${
-                  factOff ? "bg-zinc-100 opacity-60" : "bg-zinc-50"
+                  factOff ? "bg-black/5 opacity-60" : "bg-black/[0.03]"
                 }`}
               >
                 {editingFactIdx === idx ? (
@@ -426,7 +427,7 @@ function MemoryPanel({
                     <input
                       value={factEditDraft}
                       onChange={(e) => setFactEditDraft(e.target.value)}
-                      className="min-w-0 flex-1 rounded border border-zinc-300 px-1 py-0.5 text-xs"
+                      className="min-w-0 flex-1 rounded border border-hairline px-1 py-0.5 text-xs"
                     />
                     <button
                       onClick={() => {
@@ -441,7 +442,7 @@ function MemoryPanel({
                     </button>
                     <button
                       onClick={() => setEditingFactIdx(null)}
-                      className="text-xs text-zinc-400 hover:underline"
+                      className="text-xs text-ink-3 hover:underline"
                     >
                       取消
                     </button>
@@ -451,8 +452,8 @@ function MemoryPanel({
                     <span
                       className={`min-w-0 flex-1 break-all text-xs ${
                         factOff
-                          ? "text-zinc-400 line-through"
-                          : "text-zinc-700"
+                          ? "text-ink-3 line-through"
+                          : "text-ink"
                       }`}
                     >
                       {fact}
@@ -492,7 +493,7 @@ function MemoryPanel({
             );
           })}
           {factsDraft.length === 0 && (
-            <p className="text-xs text-zinc-400">暂无事实；聊几轮业务后 AI 会自动学习。</p>
+            <p className="text-xs text-ink-3">暂无事实；聊几轮业务后 AI 会自动学习。</p>
           )}
         </div>
         <div className="mt-1.5 flex gap-1">
@@ -500,7 +501,7 @@ function MemoryPanel({
             value={newFact}
             onChange={(e) => setNewFact(e.target.value)}
             placeholder="手动加一条事实…"
-            className="min-w-0 flex-1 rounded-lg border border-zinc-300 px-2 py-1 text-xs"
+            className="min-w-0 flex-1 rounded-lg border border-hairline px-2 py-1 text-xs"
           />
           <button
             onClick={() => {
@@ -510,7 +511,7 @@ function MemoryPanel({
               setNewFact("");
             }}
             disabled={disabled}
-            className="rounded-lg border border-zinc-300 px-2 text-xs text-zinc-600 hover:border-zinc-500 disabled:opacity-40"
+            className="rounded-lg border border-hairline px-2 text-xs text-ink-2 transition hover:border-accent disabled:opacity-40"
           >
             添加
           </button>
@@ -518,16 +519,17 @@ function MemoryPanel({
         <button
           onClick={() => void savePreference()}
           disabled={disabled}
-          className="mt-2 w-full rounded-lg bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-700 disabled:opacity-40"
+          className="mt-2 w-full rounded-full px-3 py-1.5 text-xs font-semibold text-white transition active:scale-95 disabled:opacity-40"
+          style={{ background: "var(--tenant-accent)" }}
         >
           保存语义记忆
         </button>
       </div>
 
       {/* ② 情景记忆：跨会话工单结论 */}
-      <div className="rounded-xl border border-zinc-200 bg-white p-3">
+      <div className="rounded-xl border border-hairline bg-white p-3">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-xs font-semibold text-zinc-700">📋 情景记忆（{String(episodes.length)} 条）</p>
+          <p className="text-xs font-semibold text-ink">📋 情景记忆（{String(episodes.length)} 条）</p>
           <button
             onClick={() => void reload()}
             disabled={disabled}
@@ -541,7 +543,7 @@ function MemoryPanel({
             <div
               key={String(ep.id)}
               className={`rounded-lg border p-2 ${
-                ep.enabled ? "border-zinc-200" : "border-zinc-200 bg-zinc-100 opacity-60"
+                ep.enabled ? "border-hairline" : "border-hairline bg-black/5 opacity-60"
               }`}
             >
               {editingEpId === ep.id ? (
@@ -550,7 +552,7 @@ function MemoryPanel({
                     value={epEditDraft}
                     onChange={(e) => setEpEditDraft(e.target.value)}
                     rows={3}
-                    className="w-full rounded border border-zinc-300 px-1.5 py-1 text-xs"
+                    className="w-full rounded border border-hairline px-1.5 py-1 text-xs"
                   />
                   <div className="mt-1 flex gap-2">
                     <button
@@ -562,7 +564,7 @@ function MemoryPanel({
                     </button>
                     <button
                       onClick={() => setEditingEpId(null)}
-                      className="rounded border border-zinc-300 px-2 py-0.5 text-xs text-zinc-600"
+                      className="rounded border border-hairline px-2 py-0.5 text-xs text-ink-2"
                     >
                       取消
                     </button>
@@ -571,19 +573,19 @@ function MemoryPanel({
               ) : (
                 <>
                   <details>
-                    <summary className="cursor-pointer text-xs leading-5 text-zinc-700">
+                    <summary className="cursor-pointer text-xs leading-5 text-ink">
                       {ep.enabled ? "" : "⏸️ "}
                       {ep.content.length > 46 ? `${ep.content.slice(0, 46)}…` : ep.content}
                     </summary>
-                    <p className="mt-1 text-xs leading-5 text-zinc-600">{ep.content}</p>
+                    <p className="mt-1 text-xs leading-5 text-ink-2">{ep.content}</p>
                     {ep.ticketRefs && (
-                      <p className="mt-1 font-mono text-[10px] text-zinc-400">
+                      <p className="mt-1 font-mono text-[10px] text-ink-3">
                         关联单号：{ep.ticketRefs}
                       </p>
                     )}
                   </details>
                   <div className="mt-1 flex items-center gap-2">
-                    <span className="text-[10px] text-zinc-400">
+                    <span className="text-[10px] text-ink-3">
                       {new Date(ep.createdAt).toLocaleString("zh-CN", { hour12: false })}
                     </span>
                     <button
@@ -618,7 +620,7 @@ function MemoryPanel({
             </div>
           ))}
           {episodes.length === 0 && (
-            <p className="text-xs text-zinc-400">
+            <p className="text-xs text-ink-3">
               暂无情景记忆；提问命中工单号（如 CUST-8842）后，关键结论会自动存到这里。
             </p>
           )}
@@ -985,49 +987,38 @@ export default function ChatPage() {
       : 0;
 
   return (
-    <div className="flex h-[calc(100vh-3.5rem)] flex-col bg-zinc-50">
-      {/* 顶部：模型选择器 + 故障演习 + 上下文占用仪表盘 + 容灾黄条 */}
-      <div className="border-b border-zinc-200 bg-white px-4 py-3 sm:px-6">
+    <div className="flex h-[calc(100vh-3.5rem)] flex-col">
+      {/* 顶部：引擎分段控件 + 故障演习 + 上下文占用仪表盘 + 容灾黄条 */}
+      <div className="glass border-b border-hairline px-4 py-3 sm:px-6">
         <div className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-3">
-          <span className="text-sm font-semibold text-zinc-700">引擎：</span>
-          <div className="flex rounded-lg border border-zinc-300 p-0.5">
-            {(
-              [
-                { key: "auto", label: "自动容灾" },
-                { key: "openai", label: "OpenAI" },
-                { key: "anthropic", label: "Anthropic" },
-              ] as const
-            ).map((opt) => (
-              <button
-                key={opt.key}
-                onClick={() => setSelector(opt.key)}
-                disabled={streaming}
-                className={`rounded-md px-3 py-1 text-sm font-medium transition-colors disabled:opacity-50 ${
-                  selector === opt.key
-                    ? "bg-zinc-900 text-white"
-                    : "text-zinc-600 hover:text-zinc-900"
-                }`}
-              >
-                {opt.label}
-              </button>
-            ))}
-          </div>
-          <label className="flex items-center gap-1.5 text-sm text-zinc-600">
+          <span className="text-sm font-semibold text-ink">引擎：</span>
+          <SegmentedControl
+            ariaLabel="对话引擎选择"
+            options={[
+              { value: "auto", label: "自动容灾" },
+              { value: "openai", label: "OpenAI" },
+              { value: "anthropic", label: "Anthropic" },
+            ]}
+            value={selector}
+            onChange={(v) => setSelector(v as ModelSelector)}
+            disabled={streaming}
+          />
+          <label className="flex items-center gap-1.5 text-sm text-ink-2">
             <input
               type="checkbox"
               checked={simulateOutage}
               onChange={(e) => setSimulateOutage(e.target.checked)}
               disabled={streaming}
-              className="h-4 w-4"
+              className="h-4 w-4 accent-[var(--tenant-accent)]"
             />
             故障演习（注入 429）
           </label>
-          <label className="ml-auto flex items-center gap-2 text-sm text-zinc-600">
+          <label className="ml-auto flex items-center gap-2 text-sm text-ink-2">
             具名审批人
             <input
               value={approver}
               onChange={(e) => setApprover(e.target.value)}
-              className="w-28 rounded-lg border border-zinc-300 px-2 py-1 text-sm"
+              className="w-28 rounded-full border border-hairline bg-white px-3 py-1.5 text-sm text-ink transition outline-none focus:border-accent focus:ring-4 focus:ring-[var(--tenant-accent-soft)]"
             />
           </label>
         </div>
@@ -1035,14 +1026,14 @@ export default function ChatPage() {
         {/* Day 9：上下文窗口占用仪表盘 */}
         <div className="mx-auto mt-3 w-full max-w-6xl">
           {contextInfo === null ? (
-            <div className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-xs text-zinc-400">
+            <div className="rounded-[14px] border border-hairline bg-white/70 px-3 py-2 text-xs text-ink-3">
               📊 上下文占用仪表盘：发送第一条消息后，这里会实时显示窗口占用与三层记忆压缩情况。
             </div>
           ) : (
-            <div className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2">
+            <div className="rounded-[14px] border border-hairline bg-white/70 px-3 py-2">
               <div className="flex flex-wrap items-center gap-2 text-xs">
-                <span className="font-semibold text-zinc-700">📊 上下文占用</span>
-                <span className="font-mono text-zinc-600">
+                <span className="font-semibold text-ink">📊 上下文占用</span>
+                <span className="font-mono tabular-nums text-ink-2">
                   {String(contextInfo.contextTokens)} / {String(contextInfo.contextBudget)} tokens
                   （{String(contextPct)}%）
                 </span>
@@ -1051,11 +1042,11 @@ export default function ChatPage() {
                     已压缩 {String(contextInfo.summarizedRounds)} 轮 · 节省 {String(contextInfo.savedPercent)}% Token
                   </span>
                 )}
-                <span className="text-zinc-400">
+                <span className="text-ink-3">
                   最近 6 轮保留原文，更早轮次自动滑动摘要
                 </span>
               </div>
-              <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-zinc-200">
+              <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-black/10">
                 <div
                   className={`h-full rounded-full transition-all ${
                     contextPct >= 80
@@ -1072,7 +1063,7 @@ export default function ChatPage() {
         </div>
 
         {globalFallback && (
-          <div className="mx-auto mt-3 w-full max-w-6xl rounded-lg border border-amber-400 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-900">
+          <div className="mx-auto mt-3 w-full max-w-6xl rounded-[14px] border border-amber-400/50 bg-amber-500/10 px-4 py-2 text-sm font-medium text-amber-800">
             ⚠️ 降级提示：{globalFallback}
           </div>
         )}
@@ -1081,45 +1072,38 @@ export default function ChatPage() {
       {/* 主体：左侧（快捷提问 / 我的记忆） + 对话区 */}
       <div className="mx-auto flex w-full max-w-6xl flex-1 gap-4 overflow-hidden px-4 py-4 sm:px-6">
         <aside className="hidden w-72 shrink-0 flex-col overflow-y-auto md:block">
-          {/* 页签切换 */}
-          <div className="mb-3 flex rounded-lg border border-zinc-300 bg-white p-0.5">
-            {(
-              [
-                { key: "quick", label: "⚡ 快捷提问" },
-                { key: "memory", label: "🧠 我的记忆" },
-              ] as const
-            ).map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => setLeftTab(tab.key)}
-                className={`flex-1 rounded-md px-2 py-1.5 text-xs font-semibold transition-colors ${
-                  leftTab === tab.key
-                    ? "bg-zinc-900 text-white"
-                    : "text-zinc-600 hover:text-zinc-900"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
+          {/* 页签切换（macOS 分段药丸控件） */}
+          <div className="mb-3">
+            <SegmentedControl
+              ariaLabel="侧栏页签"
+              fullWidth
+              size="sm"
+              options={[
+                { value: "quick", label: "⚡ 快捷提问" },
+                { value: "memory", label: "🧠 我的记忆" },
+              ]}
+              value={leftTab}
+              onChange={(v) => setLeftTab(v as LeftTab)}
+            />
           </div>
 
           {leftTab === "quick" ? (
             <div className="space-y-2">
-              <p className="text-xs font-semibold text-zinc-400">星辰集团 · 一键提问</p>
+              <p className="text-xs font-semibold text-ink-3">星辰集团 · 一键提问</p>
               {PRESET_QUESTIONS.map((p) => (
                 <button
                   key={p.label}
                   onClick={() => void ask(p.question)}
                   disabled={streaming}
-                  className="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-left text-sm transition-colors hover:border-zinc-500 disabled:opacity-50"
+                  className="bento-hover w-full rounded-[14px] border border-hairline bg-white px-3 py-2.5 text-left text-sm text-ink disabled:opacity-50"
                 >
-                  <span className="mr-1.5 rounded-md bg-zinc-100 px-1.5 py-0.5 text-xs font-semibold text-zinc-600">
+                  <span className="mr-1.5 rounded-full bg-black/5 px-2 py-0.5 text-xs font-semibold text-ink-2">
                     {p.tag}
                   </span>
                   {p.label}
                 </button>
               ))}
-              <p className="mt-4 rounded-xl border border-zinc-200 bg-white p-3 text-xs leading-5 text-zinc-500">
+              <p className="mt-4 rounded-[14px] border border-hairline bg-white p-3 text-xs leading-5 text-ink-2">
                 🔒 绿区工具只读快照；黄区写操作只出
                 <span className="font-semibold text-amber-700"> Dry-Run 草稿</span>
                 ，批准后才会转正式留痕。全站无自动打款。
@@ -1140,10 +1124,10 @@ export default function ChatPage() {
         <div className="flex min-w-0 flex-1 flex-col">
           <div
             ref={scrollRef}
-            className="flex-1 space-y-6 overflow-y-auto rounded-xl border border-zinc-200 bg-white p-4"
+            className="bento flex-1 space-y-6 overflow-y-auto p-5"
           >
             {blocks.length === 0 && (
-              <div className="grid h-full place-items-center text-center text-sm text-zinc-400">
+              <div className="grid h-full place-items-center text-center text-sm text-ink-3">
                 <div>
                   <p className="text-4xl">💬</p>
                   <p className="mt-3">
@@ -1158,9 +1142,12 @@ export default function ChatPage() {
 
             {blocks.map((b) => (
               <div key={b.id} className="space-y-3">
-                {/* 用户提问 */}
+                {/* 用户提问（租户主题色气泡） */}
                 <div className="flex justify-end">
-                  <p className="max-w-[80%] rounded-2xl bg-zinc-900 px-4 py-2 text-sm text-white">
+                  <p
+                    className="max-w-[80%] rounded-[18px] px-4 py-2.5 text-sm leading-6 whitespace-pre-wrap text-white shadow-sm"
+                    style={{ background: "var(--tenant-accent)" }}
+                  >
                     {b.question}
                   </p>
                 </div>
@@ -1173,26 +1160,26 @@ export default function ChatPage() {
                       {b.toolCards.map((c, i) => (
                         <div
                           key={`${c.tool}-${String(i)}`}
-                          className={`rounded-lg border px-3 py-2 text-sm ${
+                          className={`rounded-[14px] border px-3 py-2 text-sm transition-colors ${
                             c.zone === "green"
-                              ? "border-emerald-200 bg-emerald-50"
-                              : "border-amber-300 bg-amber-50"
-                          }`}
+                              ? "border-emerald-200/80 bg-emerald-500/[0.07]"
+                              : "border-amber-400/50 bg-amber-500/[0.08]"
+                          } ${c.status === "running" ? "aurora-edge" : ""}`}
                         >
                           <span className="mr-2">
                             {c.status === "running" ? "⏳" : c.zone === "green" ? "🟢" : "🟡"}
                           </span>
-                          <span className="font-mono text-xs text-zinc-500">{c.tool}</span>
-                          <span className="mx-2 text-zinc-300">|</span>
-                          <span className="text-zinc-700">
+                          <span className="font-mono text-xs text-ink-3">{c.tool}</span>
+                          <span className="mx-2 text-ink-3 opacity-40">|</span>
+                          <span className={c.status === "running" ? "text-ink" : "text-ink-2"}>
                             {c.status === "running" ? "查证中…" : c.summary}
                           </span>
                           {c.raw !== null && (
                             <details className="mt-1">
-                              <summary className="cursor-pointer text-xs text-sky-700 hover:underline">
+                              <summary className="cursor-pointer text-xs text-[color:var(--tenant-accent)] hover:underline">
                                 展开原文结果
                               </summary>
-                              <pre className="mt-1 max-h-48 overflow-auto rounded bg-zinc-50 p-2 font-mono text-xs leading-4 text-zinc-600">
+                              <pre className="mt-1 max-h-48 overflow-auto rounded-[10px] bg-black/[0.04] p-2 font-mono text-xs leading-4 text-ink-2">
                                 {JSON.stringify(c.raw, null, 2)}
                               </pre>
                             </details>
@@ -1202,16 +1189,16 @@ export default function ChatPage() {
                     </div>
                   )}
 
-                  {/* ② 琥珀色 Dry-Run 审批卡 */}
+                  {/* ② FIN-001 Dry-Run 审批卡：待批琥珀微光 → 批准翠绿锁定态 */}
                   {b.dryRuns.map((d) => (
                     <div
                       key={d.approvalId}
-                      className={`rounded-xl border-2 p-4 ${
+                      className={`p-4 transition-all duration-500 ${
                         d.state === "approved"
-                          ? "border-emerald-400 bg-emerald-50"
+                          ? "emerald-locked"
                           : d.state === "cancelled"
-                            ? "border-zinc-300 bg-zinc-100 opacity-70"
-                            : "border-amber-400 bg-amber-50 ring-1 ring-amber-200"
+                            ? "rounded-[20px] border border-hairline bg-black/[0.03] opacity-70"
+                            : "amber-glow-card"
                       }`}
                     >
                       <div className="mb-2 flex items-center justify-between">
@@ -1219,19 +1206,19 @@ export default function ChatPage() {
                           {d.state === "approved" ? "✅ " : d.state === "cancelled" ? "🚫 " : "⚠️ "}
                           {d.title}
                         </p>
-                        <span className="font-mono text-xs text-zinc-500">{d.approvalId}</span>
+                        <span className="font-mono text-xs tabular-nums text-ink-3">{d.approvalId}</span>
                       </div>
 
                       {d.before && d.after && (
                         <DiffRows before={d.before} after={d.after} />
                       )}
                       {d.draft && (
-                        <pre className="mb-2 rounded bg-amber-100/60 p-2 font-mono text-xs leading-4 text-amber-900">
+                        <pre className="mb-2 rounded-[12px] bg-amber-500/10 p-2 font-mono text-xs leading-4 text-amber-800">
                           {JSON.stringify(d.draft, null, 2)}
                         </pre>
                       )}
 
-                      <p className="text-xs leading-5 text-zinc-500">{d.summary}</p>
+                      <p className="text-xs leading-5 text-ink-2">{d.summary}</p>
 
                       {d.state === "pending" && (
                         <div className="mt-3 flex gap-2">
@@ -1239,13 +1226,13 @@ export default function ChatPage() {
                             onClick={() =>
                               void approveDryRun(b.id, d.approvalId, d.tool, d.summary)
                             }
-                            className="rounded-lg bg-amber-500 px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-amber-600 active:scale-95"
+                            className="rounded-full bg-amber-500 px-4 py-1.5 text-sm font-semibold text-white shadow-[0_6px_18px_var(--amber-glow)] transition hover:bg-amber-600 active:scale-95"
                           >
                             批准执行
                           </button>
                           <button
                             onClick={() => cancelDryRun(b.id, d.approvalId)}
-                            className="rounded-lg border border-zinc-300 bg-white px-4 py-1.5 text-sm text-zinc-600 hover:border-zinc-500"
+                            className="rounded-full border border-hairline bg-white px-4 py-1.5 text-sm text-ink-2 transition hover:bg-black/5"
                           >
                             取消
                           </button>
@@ -1261,38 +1248,38 @@ export default function ChatPage() {
                         </p>
                       )}
                       {d.state === "cancelled" && (
-                        <p className="mt-2 text-sm text-zinc-500">已取消，草稿作废（不落库）。</p>
+                        <p className="mt-2 text-sm text-ink-2">已取消，草稿作废（不落库）。</p>
                       )}
                     </div>
                   ))}
 
                   {/* ③ 流式回复正文 */}
                   {b.text && (
-                    <p className="whitespace-pre-wrap text-sm leading-7 text-zinc-800">
+                    <p className="whitespace-pre-wrap text-sm leading-7 text-ink">
                       {b.text}
                     </p>
                   )}
 
-                  {/* ④ 底部费用徽章 */}
+                  {/* ④ 底部费用徽章（金额/指标/耗时一律 tabular-nums） */}
                   {b.usage && (
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-zinc-500">
-                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 font-mono">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-ink-2">
+                      <span className="rounded-full border border-hairline bg-white/80 px-2.5 py-1 font-mono tabular-nums">
                         {b.usage.providerId} · {b.usage.model}
                       </span>
-                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 font-mono">
+                      <span className="rounded-full border border-hairline bg-white/80 px-2.5 py-1 font-mono tabular-nums">
                         TTFT {b.usage.ttftMs}ms · {b.usage.totalMs}ms
                       </span>
-                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1 font-mono">
+                      <span className="rounded-full border border-hairline bg-white/80 px-2.5 py-1 font-mono tabular-nums">
                         Token {b.usage.inputTokens}/{b.usage.outputTokens}
                       </span>
-                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-mono text-emerald-700">
+                      <span className="rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 font-mono tabular-nums text-emerald-700">
                         ${b.usage.usdCost.toFixed(6)}
                       </span>
-                      <span className="rounded-full border border-zinc-200 bg-zinc-50 px-2.5 py-1">
+                      <span className="rounded-full border border-hairline bg-white/80 px-2.5 py-1">
                         {b.usage.mode === "offline-sim" ? "离线高仿真" : "真实 API"}
                       </span>
                       {b.usage.wasFallback && (
-                        <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 font-semibold text-amber-800">
+                        <span className="rounded-full border border-amber-400/50 bg-amber-500/10 px-2.5 py-1 font-semibold text-amber-800">
                           已容灾切换
                         </span>
                       )}
@@ -1306,7 +1293,7 @@ export default function ChatPage() {
           {/* 底部：输入区 + 费用徽章 */}
           <div className="mt-3 space-y-2">
             {lastUsageBadge && (
-              <p className="font-mono text-xs text-zinc-400">上次调用：{lastUsageBadge}</p>
+              <p className="font-mono text-xs tabular-nums text-ink-3">上次调用：{lastUsageBadge}</p>
             )}
             <div className="flex items-end gap-2">
               <textarea
@@ -1320,12 +1307,12 @@ export default function ChatPage() {
                 }}
                 rows={2}
                 placeholder="输入问题，Enter 发送（Shift+Enter 换行）…"
-                className="min-h-[52px] flex-1 resize-none rounded-xl border border-zinc-300 bg-white px-3 py-2 text-sm focus:border-zinc-500 focus:outline-none"
+                className="aurora-focus min-h-[52px] flex-1 resize-none rounded-[18px] border border-hairline bg-white px-4 py-3 text-sm text-ink outline-none transition placeholder:text-ink-3"
               />
               {streaming ? (
                 <button
                   onClick={stop}
-                  className="h-[52px] rounded-xl bg-red-600 px-5 text-sm font-semibold text-white transition-colors hover:bg-red-700"
+                  className="h-[52px] rounded-[18px] bg-red-600 px-5 text-sm font-semibold text-white transition hover:bg-red-700 active:scale-95"
                 >
                   ■ 停止生成
                 </button>
@@ -1333,13 +1320,14 @@ export default function ChatPage() {
                 <button
                   onClick={() => void ask(input)}
                   disabled={input.trim().length === 0}
-                  className="h-[52px] rounded-xl bg-zinc-900 px-5 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 disabled:opacity-40"
+                  className="h-[52px] rounded-[18px] px-5 text-sm font-semibold text-white transition active:scale-95 disabled:opacity-40"
+                  style={{ background: "var(--tenant-accent)" }}
                 >
                   发送
                 </button>
               )}
             </div>
-            <p className="text-xs leading-5 text-zinc-400">
+            <p className="text-xs leading-5 text-ink-3">
               每次调用结束后，厂商、Token 数与美元花费由服务端写入 llm_usage_logs
               台账（只增不改）；三层记忆（情景/语义）写入记忆表且可随时在左侧「我的记忆」里查看、编辑、删除。
             </p>

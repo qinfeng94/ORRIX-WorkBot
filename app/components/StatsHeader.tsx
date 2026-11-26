@@ -38,22 +38,22 @@ export default function StatsHeader({ tickets, isLargeAmount }: StatsHeaderProps
     .reduce((sum, t) => sum + t.amount, 0);
 
   return (
-    <div className="grid grid-cols-1 gap-3 sm:grid-cols-3" role="status" aria-label="工单金额统计">
-      <div className="rounded-xl border border-zinc-200 bg-white p-4">
-        <p className="text-xs font-medium text-zinc-400">工单总数</p>
-        <p className="mt-1 text-2xl font-bold tabular-nums">{total}</p>
-        <p className="mt-0.5 text-xs text-zinc-400">当前筛选范围内</p>
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3" role="status" aria-label="工单金额统计">
+      <div className="bento p-5">
+        <p className="text-xs font-medium text-ink-3">工单总数</p>
+        <p className="mt-1.5 text-[26px] font-semibold tracking-tight tabular-nums text-ink">{total}</p>
+        <p className="mt-0.5 text-xs text-ink-3">当前筛选范围内</p>
       </div>
 
-      <div className="rounded-xl border border-zinc-200 bg-white p-4">
-        <p className="text-xs font-medium text-zinc-400">待审批</p>
-        <p className="mt-1 text-2xl font-bold tabular-nums text-amber-600">{pending}</p>
-        <p className="mt-0.5 text-xs text-zinc-400">需要人处理的单据</p>
+      <div className="bento p-5">
+        <p className="text-xs font-medium text-ink-3">待审批</p>
+        <p className="mt-1.5 text-[26px] font-semibold tracking-tight tabular-nums text-amber-600">{pending}</p>
+        <p className="mt-0.5 text-xs text-ink-3">需要人处理的单据</p>
       </div>
 
-      <div className="rounded-xl border-2 border-amber-400 bg-amber-50 p-4">
+      <div className="amber-glow-card p-5">
         <p className="text-xs font-medium text-amber-700">FIN-001 大额合计</p>
-        <p className="mt-1 text-2xl font-bold tabular-nums text-amber-700">
+        <p className="mt-1.5 text-[26px] font-semibold tracking-tight tabular-nums text-amber-700">
           ¥{largeTotal.toLocaleString("zh-CN")}
         </p>
         <p className="mt-0.5 text-xs text-amber-600">单笔超 ¥50,000 的工单金额之和</p>

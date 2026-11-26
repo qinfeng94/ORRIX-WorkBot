@@ -1,26 +1,248 @@
 @import "tailwindcss";
 
+/* ============================================================
+   WorkBot v4.0 · Apple Keynote 浅色系极简科技美学 · 设计令牌
+   画布 #F5F5F7 · 纯白 Bento（rounded-[20px] + 1px 发丝线 + 双层极淡阴影）
+   毛玻璃 rgba(255,255,255,0.78) + backdrop-blur-xl
+   主文字 #1D1D1F · 副文字 #6E6E73 · 金额/指标/耗时一律 tabular-nums
+   多租户 --tenant-accent：星辰跨境 #0071E3 / 瑞康医疗 #0D9488
+   极光微光仅限 AI 输入聚焦态与活跃推理边框，不大面积滥用霓虹色
+   ============================================================ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 一、画布与墨色 */
+  --canvas: #f5f5f7;
+  --ink: #1d1d1f;
+  --ink-2: #6e6e73;
+  --ink-3: #86868b;
+  --hairline: rgba(0, 0, 0, 0.06);
+
+  /* 二、纯白 Bento 卡片：双层极淡阴影 */
+  --bento-bg: #ffffff;
+  --bento-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.03),
+    0 8px 24px rgba(0, 0, 0, 0.05);
+  --bento-shadow-hover:
+    0 2px 4px rgba(0, 0, 0, 0.04),
+    0 14px 36px rgba(0, 0, 0, 0.09);
+
+  /* 三、毛玻璃（Apple 高斯模糊 + 提饱和） */
+  --glass-bg: rgba(255, 255, 255, 0.78);
+
+  /* 四、多租户主题色（默认星辰跨境；html[data-tenant] 热切换肤） */
+  --tenant-accent: #0071e3;
+  --tenant-accent-deep: #005bb8;
+  --tenant-accent-soft: rgba(0, 113, 227, 0.1);
+
+  /* 五、极光微光（克制使用：仅 AI 输入聚焦态 / 活跃推理边框） */
+  --aurora-blue: rgba(0, 113, 227, 0.4);
+  --aurora-violet: rgba(124, 111, 240, 0.32);
+  --aurora-ring: rgba(0, 113, 227, 0.16);
+  --aurora-halo: rgba(124, 111, 240, 0.12);
+
+  /* 六、琥珀审批微光（FIN-001 审批卡 / Dry-Run 卡专用，非霓虹） */
+  --amber-glow: rgba(245, 158, 11, 0.16);
 }
 
+/* 瑞康医疗：青绿主题 */
+html[data-tenant="ruikang"] {
+  --tenant-accent: #0d9488;
+  --tenant-accent-deep: #0b7c72;
+  --tenant-accent-soft: rgba(13, 148, 136, 0.1);
+  --aurora-blue: rgba(13, 148, 136, 0.36);
+}
+
+/* 星辰跨境：经典蓝主题（显式声明，防串味） */
+html[data-tenant="xingchen"] {
+  --tenant-accent: #0071e3;
+  --tenant-accent-deep: #005bb8;
+  --tenant-accent-soft: rgba(0, 113, 227, 0.1);
+}
+
+/* 暴露给 Tailwind 的语义色（@theme inline：跟随 CSS 变量，租户热切即换肤） */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-canvas: var(--canvas);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-hairline: var(--hairline);
+  --color-accent: var(--tenant-accent);
+  --color-accent-deep: var(--tenant-accent-deep);
+  --color-glass: var(--glass-bg);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  height: 100%;
+  scroll-behavior: smooth;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100%;
+  background: var(--canvas);
+  color: var(--ink);
+  /* Apple 系字体栈：SF Pro 优先，中文回退苹方/雅黑，非苹果设备回退 Geist */
+  font-family:
+    -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display",
+    var(--font-geist-sans), "PingFang SC", "Helvetica Neue", "Segoe UI",
+    "Microsoft YaHei", sans-serif;
+  letter-spacing: -0.011em;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--tenant-accent-soft);
+  color: var(--ink);
+}
+
+/* 克制的滚动条（macOS 覆盖式细滚动条） */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.16) transparent;
+}
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+*::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.16);
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ============================================================
+   组件级样式（Bento / 毛玻璃 / 极光 / 琥珀审批卡）
+   ============================================================ */
+
+@layer components {
+  /* 纯白 Bento 卡片：rounded-[20px] + 1px 发丝线 + 双层极淡阴影 */
+  .bento {
+    background: var(--bento-bg);
+    border: 1px solid var(--hairline);
+    border-radius: 20px;
+    box-shadow: var(--bento-shadow);
+  }
+  .bento-hover {
+    transition:
+      box-shadow 0.3s cubic-bezier(0.25, 0.1, 0.25, 1),
+      transform 0.3s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+  .bento-hover:hover {
+    box-shadow: var(--bento-shadow-hover);
+    transform: translateY(-1px);
+  }
+
+  /* 磨砂玻璃面板：顶栏 / 侧边坞 / Spotlight */
+  .glass {
+    background: var(--glass-bg);
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    backdrop-filter: blur(20px) saturate(180%);
+  }
+
+  /* macOS 分段药丸控件外槽 */
+  .segmented {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, 0.05);
+    box-shadow: inset 0 0 0 1px var(--hairline);
+  }
+
+  /* —— 极光微光一：AI 输入聚焦态（textarea 容器 focus-within 触发） —— */
+  .aurora-focus {
+    transition:
+      box-shadow 0.35s cubic-bezier(0.25, 0.1, 0.25, 1),
+      border-color 0.35s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+  .aurora-focus:focus-within {
+    border-color: var(--aurora-blue);
+    box-shadow:
+      0 0 0 3px var(--aurora-ring),
+      0 4px 28px var(--aurora-halo);
+  }
+
+  /* —— 极光微光二：活跃推理边框（渐变描边缓慢流动，克制低饱和） —— */
+  .aurora-edge {
+    position: relative;
+  }
+  .aurora-edge::before {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(
+      120deg,
+      var(--aurora-blue),
+      var(--aurora-violet),
+      var(--aurora-blue)
+    );
+    background-size: 220% 220%;
+    animation: aurora-drift 7s ease-in-out infinite;
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+    opacity: 0.85;
+  }
+  @keyframes aurora-drift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .aurora-edge::before {
+      animation: none;
+    }
+  }
+
+  /* —— FIN-001 琥珀微光审批卡：待审批态（批准后由翠绿锁定态平滑接管） —— */
+  .amber-glow-card {
+    background:
+      linear-gradient(180deg, rgba(255, 251, 235, 0.92), rgba(255, 255, 255, 0.96));
+    border: 1px solid rgba(245, 158, 11, 0.38);
+    border-radius: 20px;
+    box-shadow:
+      0 0 0 1px rgba(245, 158, 11, 0.08),
+      0 1px 1px rgba(0, 0, 0, 0.03),
+      0 8px 24px var(--amber-glow);
+    transition:
+      background 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+      border-color 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+      box-shadow 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+
+  /* —— 翠绿锁定态：具名批准落库后锁死，不可重复操作 —— */
+  .emerald-locked {
+    background: linear-gradient(180deg, rgba(236, 253, 245, 0.92), rgba(255, 255, 255, 0.97));
+    border: 1px solid rgba(16, 185, 129, 0.35);
+    border-radius: 20px;
+    box-shadow:
+      0 1px 1px rgba(0, 0, 0, 0.03),
+      0 8px 24px rgba(16, 185, 129, 0.12);
+    transition:
+      background 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+      border-color 0.5s cubic-bezier(0.25, 0.1, 0.25, 1),
+      box-shadow 0.5s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
+
+  /* Keynote 演示模式：隐藏侧边坞与页脚声明，画布居中放大 */
+  .keynote-stage {
+    transition: padding 0.45s cubic-bezier(0.25, 0.1, 0.25, 1);
+  }
 }

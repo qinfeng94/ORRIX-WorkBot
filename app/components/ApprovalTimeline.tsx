@@ -31,15 +31,15 @@ export default function ApprovalTimeline({ events }: ApprovalTimelineProps) {
   const sorted = [...events].sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
   return (
-    <section className="rounded-xl border border-zinc-200 bg-white p-5" aria-label="审批历史时间轴">
-      <h2 className="mb-4 text-sm font-bold text-zinc-700">审批历史时间轴</h2>
+    <section className="bento p-5" aria-label="审批历史时间轴">
+      <h2 className="mb-4 text-sm font-bold text-ink">审批历史时间轴</h2>
 
       {sorted.length === 0 ? (
-        <p className="py-4 text-center text-sm text-zinc-400">
+        <p className="py-4 text-center text-sm text-ink-3">
           还没有审批记录，大额工单放行后会出现在这里。
         </p>
       ) : (
-        <ol className="relative ml-3 border-l-2 border-zinc-100">
+        <ol className="relative ml-3 border-l-2 border-black/5">
           {sorted.map((e) => (
             <li key={e.id} className="mb-5 ml-6 last:mb-0">
               {/* 时间轴圆点：FIN-001 事件用琥珀色，普通事件用灰色 */}
@@ -51,25 +51,25 @@ export default function ApprovalTimeline({ events }: ApprovalTimelineProps) {
               />
 
               <div
-                className={`rounded-lg border p-3 ${
+                className={`rounded-[14px] border p-3 transition-colors duration-500 ${
                   e.isFin001
-                    ? "border-amber-300 bg-amber-50"
-                    : "border-zinc-100 bg-zinc-50"
+                    ? "border-amber-400/50 bg-amber-500/10"
+                    : "border-hairline bg-black/[0.03]"
                 }`}
               >
                 {/* 具名审批人 + 时间戳（条款 3、4：具名 + 留痕） */}
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <p className="text-sm font-semibold text-zinc-800">
+                  <p className="text-sm font-semibold text-ink">
                     {e.approver}
                     {e.isFin001 && (
-                      <span className="ml-2 inline-flex items-center rounded-md bg-amber-500 px-2 py-0.5 text-xs font-bold text-white">
+                      <span className="ml-2 inline-flex items-center rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-bold text-white">
                         ⚠️ FIN-001 大额放行
                       </span>
                     )}
                   </p>
                   <time
                     dateTime={e.timestamp}
-                    className="font-mono text-xs tabular-nums text-zinc-400"
+                    className="font-mono text-xs tabular-nums text-ink-3"
                   >
                     {new Date(e.timestamp).toLocaleString("zh-CN", {
                       hour12: false,
@@ -78,7 +78,7 @@ export default function ApprovalTimeline({ events }: ApprovalTimelineProps) {
                 </div>
 
                 {/* 动作描述 */}
-                <p className="mt-1.5 text-sm leading-6 text-zinc-600">{e.action}</p>
+                <p className="mt-1.5 text-sm leading-6 text-ink-2">{e.action}</p>
               </div>
             </li>
           ))}
@@ -86,7 +86,7 @@ export default function ApprovalTimeline({ events }: ApprovalTimelineProps) {
       )}
 
       {/* 只增不改声明（CISO 条款 4） */}
-      <p className="mt-4 rounded-lg border border-zinc-200 bg-zinc-50 p-3 text-xs leading-5 text-zinc-400">
+      <p className="mt-4 rounded-[12px] border border-hairline bg-black/[0.03] p-3 text-xs leading-5 text-ink-3">
         🔒 审批记录只增不改：所有事件由系统自动留痕，本时间轴不提供任何删除或编辑入口。
       </p>
     </section>

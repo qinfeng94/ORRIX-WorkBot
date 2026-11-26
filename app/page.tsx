@@ -25,11 +25,11 @@ import {
 } from "@/lib/posthog";
 
 const STATUS_STYLES: Record<string, string> = {
-  待林总审批: "bg-amber-100 text-amber-800 border-amber-300",
-  处理中: "bg-sky-100 text-sky-700 border-sky-300",
-  待财务复核: "bg-violet-100 text-violet-700 border-violet-300",
-  待寄回验收: "bg-zinc-100 text-zinc-600 border-zinc-300",
-  已批准: "bg-emerald-100 text-emerald-700 border-emerald-300",
+  待林总审批: "bg-amber-500/10 text-amber-700 border-amber-400/40",
+  处理中: "bg-sky-500/10 text-sky-700 border-sky-400/40",
+  待财务复核: "bg-violet-500/10 text-violet-700 border-violet-400/40",
+  待寄回验收: "bg-black/5 text-ink-2 border-hairline",
+  已批准: "bg-emerald-500/10 text-emerald-700 border-emerald-400/40",
 };
 
 const DEPARTMENTS = ["财务部", "运营部", "客服部"] as const;
@@ -210,14 +210,14 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-zinc-50 px-4 py-8 font-sans text-zinc-900 sm:px-6">
-      <main className="mx-auto w-full max-w-4xl">
-        {/* 标题区 */}
-        <header className="mb-6">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+    <div className="px-4 py-10 text-ink sm:px-8">
+      <main className="mx-auto w-full max-w-5xl">
+        {/* 标题区（Keynote 大标题排版） */}
+        <header className="mb-8">
+          <h1 className="text-[28px] font-semibold leading-tight tracking-tight sm:text-4xl">
             星辰跨境企服集团 · WorkBot 异常工单协同台
           </h1>
-          <p className="mt-2 text-sm leading-6 text-zinc-500">
+          <p className="mt-3 max-w-2xl text-[15px] leading-7 text-ink-2">
             财务红线 FIN-001：单笔超过 ¥50,000 的付款，必须由具名审批人人工签字放行。
             工单与审批记录已持久化到数据库，刷新页面不再丢失。
           </p>
@@ -225,17 +225,17 @@ export default function Home() {
 
         {/* 数据库未接入：一键引导（仅缺失 DATABASE_URL 时出现） */}
         {needsSetup && (
-          <div className="mb-6 rounded-xl border-2 border-amber-400 bg-amber-50 p-5 text-sm leading-7 text-amber-900">
+          <div className="amber-glow-card mb-6 p-5 text-sm leading-7 text-amber-900">
             <p className="mb-2 font-bold">⚠️ 数据库还没有接入（这页暂时读不到工单）</p>
             {SETUP_GUIDE}
           </div>
         )}
         {loadError && !needsSetup && (
-          <div className="mb-6 rounded-xl border border-red-300 bg-red-50 p-4 text-sm text-red-800">
+          <div className="mb-6 rounded-[16px] border border-red-300/60 bg-red-50/80 p-4 text-sm text-red-700">
             加载失败：{loadError}
             <button
               onClick={() => void load()}
-              className="ml-3 rounded-md border border-red-300 bg-white px-3 py-1 text-xs font-semibold text-red-700 hover:bg-red-100"
+              className="ml-3 rounded-full border border-red-300 bg-white px-3 py-1 text-xs font-semibold text-red-700 transition hover:bg-red-50"
             >
               重试
             </button>
@@ -258,14 +258,15 @@ export default function Home() {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setShowForm((v) => !v)}
-              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold text-zinc-700 transition-colors hover:border-zinc-500 hover:text-zinc-900"
+              className="rounded-full px-5 py-2 text-sm font-semibold text-white shadow-sm transition active:scale-95"
+              style={{ background: "var(--tenant-accent)" }}
             >
               {showForm ? "收起新建表单" : "＋ 新建工单"}
             </button>
             <button
               onClick={() => void load()}
               disabled={loading}
-              className="rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-600 transition-colors hover:border-zinc-500 hover:text-zinc-900 disabled:opacity-50"
+              className="rounded-full border border-hairline bg-white px-4 py-2 text-sm text-ink-2 transition hover:bg-black/5 hover:text-ink disabled:opacity-50"
             >
               {loading ? "加载中…" : "⟳ 从数据库刷新"}
             </button>
@@ -273,17 +274,17 @@ export default function Home() {
 
           {/* 新建工单表单（内嵌直排，非模态） */}
           {showForm && (
-            <div className="rounded-xl border border-zinc-200 bg-white p-5">
-              <p className="mb-4 text-sm font-semibold text-zinc-700">
+            <div className="bento p-6">
+              <p className="mb-4 text-sm font-semibold text-ink">
                 新建异常工单（提交后立即写入数据库）
               </p>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 <label className="text-sm">
-                  <span className="mb-1 block text-zinc-500">所属部门</span>
+                  <span className="mb-1 block text-ink-2">所属部门</span>
                   <select
                     value={formDepartment}
                     onChange={(e) => setFormDepartment(e.target.value)}
-                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                    className="w-full rounded-[12px] border border-hairline bg-white px-3.5 py-2 text-sm text-ink transition outline-none placeholder:text-ink-3 focus:border-accent focus:ring-4 focus:ring-[var(--tenant-accent-soft)]"
                   >
                     {DEPARTMENTS.map((d) => (
                       <option key={d} value={d}>
@@ -293,41 +294,41 @@ export default function Home() {
                   </select>
                 </label>
                 <label className="text-sm">
-                  <span className="mb-1 block text-zinc-500">金额（元，整数）</span>
+                  <span className="mb-1 block text-ink-2">金额（元，整数）</span>
                   <input
                     type="number"
                     value={formAmount}
                     onChange={(e) => setFormAmount(e.target.value)}
                     placeholder="如 68500"
-                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                    className="w-full rounded-[12px] border border-hairline bg-white px-3.5 py-2 text-sm text-ink transition outline-none placeholder:text-ink-3 focus:border-accent focus:ring-4 focus:ring-[var(--tenant-accent-soft)]"
                   />
                 </label>
                 <label className="text-sm">
-                  <span className="mb-1 block text-zinc-500">客户姓名（展示时自动脱敏）</span>
+                  <span className="mb-1 block text-ink-2">客户姓名（展示时自动脱敏）</span>
                   <input
                     value={formCustomer}
                     onChange={(e) => setFormCustomer(e.target.value)}
                     placeholder="虚构测试姓名"
-                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                    className="w-full rounded-[12px] border border-hairline bg-white px-3.5 py-2 text-sm text-ink transition outline-none placeholder:text-ink-3 focus:border-accent focus:ring-4 focus:ring-[var(--tenant-accent-soft)]"
                   />
                 </label>
                 <label className="text-sm">
-                  <span className="mb-1 block text-zinc-500">银行账号（展示时自动脱敏）</span>
+                  <span className="mb-1 block text-ink-2">银行账号（展示时自动脱敏）</span>
                   <input
                     value={formBank}
                     onChange={(e) => setFormBank(e.target.value)}
                     placeholder="虚构测试账号（8~30 位数字）"
-                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                    className="w-full rounded-[12px] border border-hairline bg-white px-3.5 py-2 text-sm text-ink transition outline-none placeholder:text-ink-3 focus:border-accent focus:ring-4 focus:ring-[var(--tenant-accent-soft)]"
                   />
                 </label>
                 <label className="text-sm sm:col-span-2">
-                  <span className="mb-1 block text-zinc-500">异常摘要</span>
+                  <span className="mb-1 block text-ink-2">异常摘要</span>
                   <textarea
                     value={formSummary}
                     onChange={(e) => setFormSummary(e.target.value)}
                     rows={3}
                     placeholder="一句话说明异常情况（不超过 200 字）"
-                    className="w-full rounded-lg border border-zinc-300 px-3 py-2 text-sm"
+                    className="w-full rounded-[12px] border border-hairline bg-white px-3.5 py-2 text-sm text-ink transition outline-none placeholder:text-ink-3 focus:border-accent focus:ring-4 focus:ring-[var(--tenant-accent-soft)]"
                   />
                 </label>
               </div>
@@ -338,18 +339,19 @@ export default function Home() {
                 <button
                   onClick={() => void submitNewTicket()}
                   disabled={submitting}
-                  className="rounded-lg bg-zinc-900 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-zinc-700 disabled:opacity-50"
+                  className="rounded-full px-5 py-2 text-sm font-semibold text-white transition active:scale-95 disabled:opacity-50"
+                  style={{ background: "var(--tenant-accent)" }}
                 >
                   {submitting ? "提交中…" : "提交入库"}
                 </button>
                 <button
                   onClick={() => setShowForm(false)}
-                  className="rounded-lg border border-zinc-300 px-4 py-2 text-sm text-zinc-600 hover:border-zinc-500"
+                  className="rounded-full border border-hairline px-4 py-2 text-sm text-ink-2 transition hover:bg-black/5"
                 >
                   取消
                 </button>
               </div>
-              <p className="mt-3 text-xs leading-5 text-zinc-400">
+              <p className="mt-3 text-xs leading-5 text-ink-3">
                 超过 ¥50,000 的财务部工单会自动触发 FIN-001 强制人工审批，不出现任何自动打款入口。
               </p>
             </div>
@@ -358,7 +360,7 @@ export default function Home() {
 
         {/* ③ 工单卡片列表 + 详情抽屉（ENG-101） */}
         {loading && tickets.length === 0 ? (
-          <p className="rounded-xl border border-dashed border-zinc-300 p-8 text-center text-sm text-zinc-400">
+          <p className="bento border-dashed p-8 text-center text-sm text-ink-3">
             正在从数据库加载工单…
           </p>
         ) : (
@@ -369,32 +371,41 @@ export default function Home() {
                 <article
                   key={t.id}
                   onClick={() => setDrawerTicket(t)}
-                  className={`cursor-pointer rounded-xl border p-5 shadow-sm transition-shadow hover:shadow-md ${
-                    fin
-                      ? "border-2 border-amber-400 bg-amber-50 ring-1 ring-amber-200"
-                      : "border-zinc-200 bg-white"
+                  className={`cursor-pointer p-6 ${
+                    fin && t.status === "已批准"
+                      ? "emerald-locked bento-hover"
+                      : fin
+                        ? "amber-glow-card bento-hover"
+                        : "bento bento-hover"
                   }`}
                 >
                   <div className="mb-3 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs text-zinc-400">{t.id}</span>
-                      <span className="rounded-md bg-zinc-100 px-2 py-0.5 text-xs font-medium text-zinc-600">
+                      <span className="font-mono text-xs text-ink-3">{t.id}</span>
+                      <span className="rounded-full bg-black/5 px-2.5 py-0.5 text-xs font-medium text-ink-2">
                         {t.department}
                       </span>
                     </div>
-                    <span className="text-lg font-bold tabular-nums">
+                    <span className="text-[17px] font-semibold tracking-tight tabular-nums">
                       ¥{t.amount.toLocaleString("zh-CN")}
                     </span>
                   </div>
 
                   {/* FIN-001 预警徽章（判定来源：isLargeAmount 单点） */}
                   {fin && (
-                    <div className="mb-3 inline-flex items-center gap-1.5 rounded-md border border-amber-400 bg-amber-500 px-2.5 py-1 text-xs font-bold text-white">
-                      <span aria-hidden>⚠️</span> FIN-001 强制人工审批
+                    <div
+                      className={`mb-3 inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-bold transition-colors duration-500 ${
+                        t.status === "已批准"
+                          ? "border-emerald-400/50 bg-emerald-500/15 text-emerald-700"
+                          : "border-amber-400/50 bg-amber-500/15 text-amber-700"
+                      }`}
+                    >
+                      <span aria-hidden>{t.status === "已批准" ? "✅" : "⚠️"}</span>
+                      {t.status === "已批准" ? "FIN-001 已具名放行" : "FIN-001 强制人工审批"}
                     </div>
                   )}
 
-                  <p className="mb-4 text-sm leading-6 text-zinc-600">{t.summary}</p>
+                  <p className="mb-4 text-sm leading-6 text-ink-2">{t.summary}</p>
 
                   <div className="flex items-center justify-between gap-3">
                     <span
@@ -415,7 +426,7 @@ export default function Home() {
                           e.stopPropagation();
                           void approve(t.id);
                         }}
-                        className="rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-amber-600 active:scale-95"
+                        className="rounded-full bg-amber-500 px-4 py-2 text-sm font-semibold text-white shadow-[0_6px_18px_var(--amber-glow)] transition hover:bg-amber-600 active:scale-95"
                       >
                         林总批准放行
                       </button>
@@ -433,7 +444,7 @@ export default function Home() {
         )}
 
         {/* ④ 审批历史时间轴（ENG-104） */}
-        <div className="mt-8">
+        <div className="mt-10">
           <ApprovalTimeline events={events} />
         </div>
 
@@ -444,7 +455,7 @@ export default function Home() {
         />
 
         {/* 权限边界声明 */}
-        <footer className="mt-8 rounded-xl border border-zinc-200 bg-white p-4 text-xs leading-6 text-zinc-500">
+        <footer className="glass mt-10 rounded-[20px] border border-hairline p-5 text-xs leading-6 text-ink-2">
           🔒 本协同台严格遵循《The Agent Line 权限边界签字单》（04 号文档）红区条款：
           全站不提供任何「AI 自动打款」能力，每笔大额放行均由具名审批人点击确认，
           审批记录写入数据库审计表（只增不改，数据库层物理禁止修改）。

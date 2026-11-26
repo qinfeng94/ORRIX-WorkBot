@@ -4,8 +4,10 @@
  * ENG-102 · 搜索过滤条组件
  * 溯源：03 方案书第一节（一线效率诉求）；01 号文档王主管沟通策略
  * 边界：受控组件，筛选状态由 ENG-105 统一持有；
- *      Props 类型本地声明，不 import 其他组件（正交性要求）。
+ *      Props 类型本地声明（分段控件为纯展示子组件，Props 契约不变）。
  */
+
+import SegmentedControl from "./ui/SegmentedControl";
 
 interface TicketSearchBarProps {
   /** 当前搜索关键词 */
@@ -29,7 +31,7 @@ export default function TicketSearchBar({
 }: TicketSearchBarProps) {
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-      {/* 关键词搜索：即时过滤，无需按钮 */}
+      {/* 关键词搜索：即时过滤，无需按钮（磨砂胶囊 + 聚焦微光） */}
       <label className="relative block sm:w-72">
         <span className="sr-only">搜索工单</span>
         <input
@@ -37,27 +39,17 @@ export default function TicketSearchBar({
           value={keyword}
           onChange={(e) => onKeywordChange(e.target.value)}
           placeholder="输入工单号或摘要关键词…"
-          className="w-full rounded-full border border-zinc-300 bg-white px-4 py-2 text-sm text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-900 focus:outline-none"
+          className="aurora-focus w-full rounded-full border border-hairline bg-white/80 px-4 py-2 text-sm text-ink outline-none transition placeholder:text-ink-3"
         />
       </label>
 
-      {/* 部门筛选标签，可与关键词搜索叠加 */}
-      <div className="flex flex-wrap gap-2" role="group" aria-label="部门筛选">
-        {DEPARTMENTS.map((d) => (
-          <button
-            key={d}
-            onClick={() => onDepartmentChange(d)}
-            aria-pressed={department === d}
-            className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-              department === d
-                ? "border-zinc-900 bg-zinc-900 text-white"
-                : "border-zinc-300 bg-white text-zinc-600 hover:border-zinc-500"
-            }`}
-          >
-            {d}
-          </button>
-        ))}
-      </div>
+      {/* 部门筛选：macOS 分段药丸控件，可与关键词搜索叠加 */}
+      <SegmentedControl
+        ariaLabel="部门筛选"
+        options={DEPARTMENTS.map((d) => ({ value: d, label: d }))}
+        value={department}
+        onChange={onDepartmentChange}
+      />
     </div>
   );
 }

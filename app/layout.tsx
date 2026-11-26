@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import TopNav from "./components/TopNav";
 import "./globals.css";
+import { TenantProvider } from "./components/shell/TenantContext";
+import AppShell from "./components/shell/AppShell";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,19 +15,22 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "星辰 WorkBot · 异常工单协同台",
-  description: "星辰跨境企服集团 WorkBot v4.0：AI 只读、起草、标记，放行永远归人。",
+  title: "星辰跨境企服集团 · WorkBot v4.0",
+  description:
+    "星辰跨境企服集团 WorkBot v4.0 —— 异常工单协同台（FIN-001 大额审批人工红线）",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
   return (
-    <html
-      lang="zh-CN"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <TopNav />
-        {children}
+    <html lang="zh-CN" data-tenant="xingchen">
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
+        <TenantProvider>
+          <AppShell>{children}</AppShell>
+        </TenantProvider>
       </body>
     </html>
   );
