@@ -1,0 +1,3 @@
+{"ts":"2026-11-26T16:10:04.516Z","mode":"local","rolledBackTo":"workbot:v4.0.34-good","result":"pass","elapsedSeconds":2,"auditRows":{"approvalAuditLogs":18,"llmUsageLogs":40}}
+{"ts":"2026-11-26T16:14:21.586Z","mode":"local","rolledBackTo":"workbot:v4.0.35-bad","result":"pass","elapsedSeconds":3,"auditRows":{"approvalAuditLogs":18,"llmUsageLogs":40}}
+{"ts":"2026-11-26T16:23:29.927Z","mode":"local","rolledBackTo":"workbot:v4.0.34-good","result":"pass","elapsedSeconds":3,"auditRows":{"approvalAuditLogs":18,"llmUsageLogs":40}}

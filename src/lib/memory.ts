@@ -167,7 +167,7 @@ export function extractEpisode(
  * ③ 语义记忆：部门偏好自动学习 + 称呼风格
  * ================================================================ */
 
-/** 业务流 → 部门映射（与 chat-engine 的 classifyQuestion 四类流对应） */
+/** 业务流 → 部门映射（默认租户口径；多租户调用方应传入租户配置的 flowDepartments） */
 export const FLOW_DEPARTMENT: Record<string, string> = {
   logistics: "运营部",
   finance: "财务部",
@@ -179,12 +179,14 @@ export const FLOW_DEPARTMENT: Record<string, string> = {
  * ③ 语义记忆自动学习：根据本轮业务流更新部门偏好事实。
  * 规则：generic 不学习；命中部门时 department 更新为该部门，
  *      并在 facts 里保证有一条「常关注部门：X」；称呼风格不由 AI 猜测，交给用户手改。
+ * Day 27 多租户：deptMap 缺省 = 默认租户映射；其他租户传入 tenantConfig.flowDepartments。
  */
 export function learnPreference(
   prev: { department: string; facts: string[] },
   flow: string,
+  deptMap: Readonly<Record<string, string>> = FLOW_DEPARTMENT,
 ): { department: string; facts: string[] } {
-  const dept = FLOW_DEPARTMENT[flow] ?? "";
+  const dept = deptMap[flow] ?? "";
   if (dept === "") return prev;
   const factLabel = `常关注部门：${dept}`;
   const facts = prev.facts.includes(factLabel)

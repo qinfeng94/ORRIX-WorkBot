@@ -7,6 +7,7 @@
  */
 
 import Link from "next/link";
+import { connection } from "next/server";
 import EntryForm from "./EntryForm";
 import { getInvoicePage, LEGACY_ERP_TOTAL_PAGES } from "@/lib/browser-lab/legacy-erp-data";
 import type { LegacyErpInvoice } from "@/lib/browser-lab/types";
@@ -15,6 +16,10 @@ import type { LegacyErpInvoice } from "@/lib/browser-lab/types";
 interface PageProps {
   searchParams: Promise<{ page?: string }>;
 }
+
+// cacheComponents 下本页按 ?page= 动态翻页，属阻塞路由（显式豁免预渲染，
+// 与 /arch-audit 同款声明）：构建期不再拦截，运行期按请求实时渲染
+export const instant = false;
 
 function parsePage(raw: string | undefined): number {
   const n = Number.parseInt(raw ?? "1", 10);
@@ -30,6 +35,9 @@ function statusBadge(inv: LegacyErpInvoice): string {
 }
 
 export default async function SandboxLegacyErpPage({ searchParams }: PageProps) {
+  // 超期天数计算依赖 new Date()（不稳定值）：先用 connection() 划到请求时渲染，
+  // 避免运行期预渲染通道反复报「unstable value」错误（cacheComponents 官方建议口径）
+  await connection();
   const params = await searchParams;
   const page = parsePage(params.page);
   const invoices = getInvoicePage(page);

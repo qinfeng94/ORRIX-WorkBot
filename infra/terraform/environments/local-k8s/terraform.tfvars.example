@@ -1,0 +1,14 @@
+###############################################################################
+# local-k8s 变量示例（复制为 terraform.tfvars 后按需修改；严禁把真实密钥写进 tfvars）
+###############################################################################
+
+# 统一变量（三套环境同名）
+project_name                   = "workbot"
+environment                    = "local-k8s"
+private_subnet_cidrs           = ["10.244.0.0/16", "10.96.0.0/12"] # kind 默认 Pod/Service 网段
+database_publicly_accessible   = false                             # GATE-2：写 true 会被门禁拦截
+log_encryption_kms_key_ref     = "local://day35/audit-log-key"     # 本地演习密钥通道
+
+# 本环境专属
+app_image    = "workbot:v4.0.35"
+app_replicas = 2

@@ -5,13 +5,29 @@
  * 边界：仅拦截 "@/..." 与确实存在对应 .ts 文件的无扩展名相对导入；其余走 Node 默认解析。
  */
 
-import { existsSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 export function resolve(specifier, context, nextResolve) {
-  // ① tsconfig paths：@/x → 项目根 src/x（.ts 显式扩展名，配合 --experimental-strip-types）
+  // ① tsconfig paths：@/x → 项目根 src/x（.ts 显式扩展名，配合 --experimental-strip-types）；
+  //    带扩展名的 .mjs（如 @/lib/llm/llm-client.mjs）按 tsconfig 的 "./*" 兜底映射到项目根
   if (specifier.startsWith("@/")) {
-    const target = new URL(`../src/${specifier.slice(2)}.ts`, import.meta.url);
+    const bare = specifier.slice(2);
+    if (bare.endsWith(".mjs")) {
+      const mjsTarget = new URL(`../${bare}`, import.meta.url);
+      if (existsSync(fileURLToPath(mjsTarget))) {
+        return { url: mjsTarget.href, shortCircuit: true };
+      }
+    }
+    const target = new URL(`../src/${bare}.ts`, import.meta.url);
+    if (existsSync(fileURLToPath(target))) {
+      return { url: target.href, shortCircuit: true };
+    }
+    // ③ 目录形式：@/db → src/db/index.ts（同 Node/TS 的目录 index 兜底）
+    const indexTarget = new URL(`../src/${bare}/index.ts`, import.meta.url);
+    if (existsSync(fileURLToPath(indexTarget))) {
+      return { url: indexTarget.href, shortCircuit: true };
+    }
     return { url: target.href, shortCircuit: true };
   }
 
@@ -28,4 +44,19 @@ export function resolve(specifier, context, nextResolve) {
   }
 
   return nextResolve(specifier, context);
+}
+
+/**
+ * load 钩子：测试进程内拦截 .json 导入（Day 26 审批策略配置等）。
+ * 背景：Node ESM 要求 JSON 导入必须带 `with { type: "json" }` 属性，
+ *      而项目 TypeScript 5.0.2 解析不了该语法（5.3+ 才支持）——两边夹击。
+ * 解法：源码用普通 JSON 导入（Next 打包器 + resolveJsonModule 兼容），
+ *      测试进程在这里把 JSON 文件转成 ESM 模块返回，双端兼容。
+ */
+export function load(url, context, nextLoad) {
+  if (url.endsWith(".json")) {
+    const text = readFileSync(fileURLToPath(url), "utf-8");
+    return { format: "module", source: `export default ${text};`, shortCircuit: true };
+  }
+  return nextLoad(url, context);
 }

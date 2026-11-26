@@ -1,0 +1,132 @@
+# ============================================================
+# WorkBot 生产双容器编排（Day 34 拉取式升级方案的地基）
+#
+# 架构：App 容器 + Postgres 容器，双容器独立隔离
+#   · db     —— 只挂 internal 内网，绝不发布任何公网/宿主机端口；
+#               宿主机查库统一走 `docker compose exec db psql`，远程运维一律
+#               通过本机的拉取式升级脚本（scripts/pull-upgrade.sh，仅出站 HTTPS）
+#   · app    —— 双模型网关 + 编排引擎 + 队列 Worker 全部内置于同一个应用容器
+#               （默认 postgres 引擎：审批状态机直接驱动数据库，无需独立 Worker 进程；
+#               Inngest 跨重启持久化引擎为备胎，如需启用见文件末尾注释段）
+#   · 密钥   —— 全部走 .env.prod（已 gitignore），绝不写死在编排文件里
+#
+# 用法：
+#   cp .env.prod.example .env.prod   # 首次部署（或按下方环境变量清单手工创建）
+#   docker compose -f docker-compose.prod.yml up -d
+# 升级：
+#   bash scripts/pull-upgrade.sh     # 拉取式升级（先快照、签名校验、健康门禁、自动回滚）
+# ============================================================
+
+name: workbot-prod
+
+services:
+  # ---------------- 数据库容器（红区：零公网暴露） ----------------
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: workbot
+      POSTGRES_DB: workbot
+      # 密码只从 .env.prod 注入；缺省直接拒绝启动（fail-closed，杜绝弱口令上线）
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?请在 .env.prod 中设置 POSTGRES_PASSWORD}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U workbot -d workbot"]
+      interval: 10s
+      timeout: 3s
+      retries: 6
+      start_period: 10s
+    networks:
+      - internal
+    # 红线：数据库绝不对外发布端口。需要本机临时查库时取消下一行注释（仅绑回环地址）：
+    # ports:
+    #   - "127.0.0.1:5433:5432"
+    security_opt:
+      - no-new-privileges:true
+
+  # ---------------- 应用容器（App + 内置 Worker 角色） ----------------
+  app:
+    # 拉取式升级：WORKBOT_IMAGE 指向客户私有镜像仓库（registry:tag/摘要），
+    # 本地构建时默认镜像名与 Dockerfile build 产物对齐
+    image: ${WORKBOT_IMAGE:-workbot-app:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      NODE_ENV: production
+      # 数据库连接串：只指向内网 db 容器（不对公网）
+      DATABASE_URL: postgresql://workbot:${POSTGRES_PASSWORD}@db:5432/workbot
+      # 物理总电闸（红区 Kill Switch）：运维在 .env.prod 置 1 → ≤1 秒锁死全部 AI 写操作
+      WORKBOT_KILL_SWITCH: ${WORKBOT_KILL_SWITCH:-0}
+      # 应用版本可见性（/api/health release.image 回显，升级脚本自动注入）
+      WORKBOT_IMAGE: ${WORKBOT_IMAGE:-workbot-app:latest}
+      # Inngest 备胎引擎（可选）：仅 --profile worker 时可达；默认 postgres 引擎不依赖它
+      INNGEST_DEV_SERVER_URL: ${INNGEST_DEV_SERVER_URL:-http://worker:8288}
+      # LLM 密钥（离线高仿真可不填；--live 模式才需要，只经环境变量进内存，不落日志）
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      # 跨组织 A2A 验真令牌（可选）
+      EXTERNAL_LOGISTICS_A2A_TOKEN: ${EXTERNAL_LOGISTICS_A2A_TOKEN:-}
+    # 密钥等其余变量从 .env.prod 注入（文件不存在不阻塞启动，离线模式照常运行）
+    env_file:
+      - path: .env.prod
+        required: false
+    ports:
+      # 只绑回环地址：生产对外统一走客户既有反向代理 / 负载均衡
+      - "127.0.0.1:3000:3000"
+    volumes:
+      # 网关台账（JSONL 只增不改追加写）持久化：升级换容器不丢账。
+      # 只挂这一个子目录——/app/data 根目录不能挂卷，否则会遮蔽镜像内置的
+      # data/evals 评测数据集（评测门禁 / 红队演习运行时必需）
+      - gateway-ledger:/app/data/day24
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health').then(async r=>{const j=await r.json().catch(()=>null);process.exit(r.ok&&j&&j.status==='ok'?0:1)}).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    networks:
+      - internal
+      - web
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+volumes:
+  pgdata:
+  gateway-ledger:
+
+networks:
+  # 内网：db 与 app 之间东西向流量，无任何对外出口绑定
+  internal:
+    driver: bridge
+    internal: false # 如需更强隔离可改 true（app 将失去出站拉取能力，升级改由宿主侧代理）
+  # 外网：仅 app 出站（拉镜像 / 调 LLM / A2A 验真）与回环端口映射
+  web:
+    driver: bridge
+
+# ---------------- 可选：Inngest 备胎引擎（跨重启持久化工作流） ----------------
+# 默认生产引擎为 postgres（app 容器内直接驱动审批状态机，零额外容器）。
+# 如需启用 Inngest 模式，取消以下注释并运行：
+#   docker compose -f docker-compose.prod.yml --profile worker up -d
+#
+# worker:
+#   image: inngest/inngest:latest
+#   command: inngest dev --host 0.0.0.0 --port 8288 --sdk-url http://app:3000/api/inngest
+#   restart: unless-stopped
+#   networks:
+#     - internal
+#   profiles:
+#     - worker

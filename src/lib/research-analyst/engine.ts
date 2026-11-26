@@ -13,6 +13,7 @@
  */
 
 import { searchRag } from "../raglab/retrieval";
+import { FIN001_THRESHOLD_YUAN } from "@/lib/fin001";
 
 /* ================================================================
  * 一、事件与数据结构（SSE 对外直播口径）
@@ -624,7 +625,11 @@ export async function runResearchPipeline(
   for (const [supplierId, records] of bySupplier) {
     const findings = findingsBySupplier.get(supplierId) ?? [];
     for (const r of records) {
-      if (r.kind === "consolidated_claim" && (r.amountCny ?? 0) > 50000 && r.approved !== true) {
+      if (
+        r.kind === "consolidated_claim" &&
+        (r.amountCny ?? 0) > FIN001_THRESHOLD_YUAN &&
+        r.approved !== true
+      ) {
         // 单笔超 ¥50,000 未见具名放行：FIN-001 强制人工审批缺口（合并口径）
         const cites = [refFin, refCap].filter((c): c is string => c !== null);
         complianceGaps.push({

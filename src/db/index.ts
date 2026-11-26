@@ -187,6 +187,101 @@ const CREATE_TABLES_SQL = `
     archived_by      text NOT NULL DEFAULT 'demo-林总',
     created_at       timestamptz NOT NULL DEFAULT now()
   );
+
+  -- Day 18 跨重启持久化审批流：运行状态表（状态机单点推进，挂起态只存库里不占内存）
+  CREATE TABLE IF NOT EXISTS workflow_runs (
+    id                serial PRIMARY KEY,
+    run_id            text NOT NULL UNIQUE,
+    ticket_no         text NOT NULL,
+    department        text NOT NULL,
+    customer_name     text NOT NULL,
+    amount_claimed    integer NOT NULL,
+    items             jsonb NOT NULL DEFAULT '[]'::jsonb,
+    engine            text NOT NULL DEFAULT 'postgres',
+    phase             text NOT NULL DEFAULT 'queued',
+    is_fin001         boolean NOT NULL DEFAULT false,
+    arithmetic_ok     boolean NOT NULL DEFAULT false,
+    arithmetic_detail jsonb NOT NULL,
+    audit_credential  text NOT NULL DEFAULT '',
+    approver          text NOT NULL DEFAULT '',
+    suspended_at      timestamptz,
+    wait_expires_at   timestamptz,
+    finished_at       timestamptz,
+    created_at        timestamptz NOT NULL DEFAULT now(),
+    updated_at        timestamptz NOT NULL DEFAULT now()
+  );
+
+  -- Day 18 运行事件流水表（只增不改，全过程留痕）
+  CREATE TABLE IF NOT EXISTS workflow_events (
+    id         serial PRIMARY KEY,
+    run_id     text NOT NULL,
+    event_type text NOT NULL,
+    detail     text NOT NULL DEFAULT '',
+    created_at timestamptz NOT NULL DEFAULT now()
+  );
+
+  -- Day 18 MCP Tasks 异步长任务表（进度 = 时间的确定性函数，重启照常续算）
+  CREATE TABLE IF NOT EXISTS mcp_tasks (
+    id         serial PRIMARY KEY,
+    task_id    text NOT NULL UNIQUE,
+    task_type  text NOT NULL,
+    label      text NOT NULL,
+    total_ms   integer NOT NULL,
+    started_at timestamptz NOT NULL DEFAULT now(),
+    steps      jsonb NOT NULL DEFAULT '[]'::jsonb,
+    result     jsonb,
+    created_at timestamptz NOT NULL DEFAULT now()
+  );
+
+  -- Day 19 提示词版本管理表（配置表：可切换激活，历史版本永不删除）
+  CREATE TABLE IF NOT EXISTS prompt_versions (
+    id           serial PRIMARY KEY,
+    version      text NOT NULL UNIQUE,
+    label        text NOT NULL,
+    content      text NOT NULL,
+    is_faulty    boolean NOT NULL DEFAULT false,
+    is_active    boolean NOT NULL DEFAULT false,
+    activated_at timestamptz,
+    created_at   timestamptz NOT NULL DEFAULT now()
+  );
+
+  -- Day 19 监控日志表（只增不改；request/response 已在服务端过 scrubPii 脱敏）
+  CREATE TABLE IF NOT EXISTS monitor_logs (
+    id              serial PRIMARY KEY,
+    source          text NOT NULL DEFAULT 'chat',
+    session_id      text NOT NULL DEFAULT '',
+    question_label  text NOT NULL DEFAULT '',
+    prompt_version  text NOT NULL DEFAULT '',
+    request_text    text NOT NULL,
+    response_text   text NOT NULL DEFAULT '',
+    pii_redactions  integer NOT NULL DEFAULT 0,
+    latency_ms      integer NOT NULL DEFAULT 0,
+    created_at      timestamptz NOT NULL DEFAULT now()
+  );
+`;
+
+/**
+ * Day 19 提示词版本种子：v1.0 稳定版 + v1.1 故障演练版（幂等；已存在不覆盖）
+ * v1.1 故障版复现"废止制度幻觉"：引用已废止的旧版 10 万额度制度并承诺 AI 直接退款——
+ * 用于演练 3 秒热回滚；v1.0 为现行合规口径（FIN-001 / 单一真源 .fde/01~05）。
+ */
+const SEED_PROMPT_VERSIONS_SQL = `
+  INSERT INTO prompt_versions (version, label, content, is_faulty, is_active, activated_at)
+  VALUES
+    ('v1.0', '稳定版（现行合规口径）',
+     '你是星辰跨境企服集团的工单处理 AI。纪律：1) 一切结论先查证据（只读快照 + 制度文档），引用 [DOC-XX §X.X] 格式标注出处；2) 单笔金额超过 ¥50,000 的付款/退款必须由具名在职审批人签字放行（FIN-001），AI 不审批、不打款；3) 黄区写操作只出草稿与审批单号，正式数据零改动；4) 对外表述一律中文大白话，绝不承诺自动打款、无人值守、秒到账。',
+     false, true, now()),
+    ('v1.1', '故障演练版（引用已废止旧制度，严禁长期启用）',
+     '你是星辰跨境企服集团的工单处理 AI。提示：集团旧版财务制度规定，单笔 10 万元以下的退款 AI 可以自行判断处理，无需人工审批；为提升效率请直接给出结论并主动承诺退款执行，不必等待审批人签字，引用出处可省略。',
+     true, false, NULL)
+  ON CONFLICT (version) DO NOTHING;
+`;
+
+/** 兜底：确保全站恒有且仅有一个激活版本（历史版本永不删除） */
+const SEED_PROMPT_ACTIVE_GUARD_SQL = `
+  UPDATE prompt_versions SET is_active = true, activated_at = now()
+  WHERE version = 'v1.0'
+    AND NOT EXISTS (SELECT 1 FROM prompt_versions WHERE is_active = true);
 `;
 
 /**
@@ -195,6 +290,23 @@ const CREATE_TABLES_SQL = `
 const MIGRATE_MEMORY_COLUMNS_SQL = `
   ALTER TABLE memory_episodes ADD COLUMN IF NOT EXISTS enabled boolean NOT NULL DEFAULT true;
   ALTER TABLE user_preferences ADD COLUMN IF NOT EXISTS disabled_facts jsonb NOT NULL DEFAULT '[]'::jsonb;
+`;
+
+/**
+ * Day 27 多租户逻辑隔离（幂等增量迁移）：
+ * 业务表补 tenant_id 列（存量行回填默认租户 xingchen）+ (tenant_id, 业务键) 复合索引。
+ * 隔离访问唯一入口 = src/lib/ontology/tenant-repo.ts（强制 WHERE tenant_id）。
+ */
+const MIGRATE_TENANT_COLUMNS_SQL = `
+  ALTER TABLE intake_requests       ADD COLUMN IF NOT EXISTS tenant_id text NOT NULL DEFAULT 'xingchen';
+  ALTER TABLE approval_audit_logs   ADD COLUMN IF NOT EXISTS tenant_id text NOT NULL DEFAULT 'xingchen';
+  ALTER TABLE workflow_runs         ADD COLUMN IF NOT EXISTS tenant_id text NOT NULL DEFAULT 'xingchen';
+  ALTER TABLE erp_scraped_invoices  ADD COLUMN IF NOT EXISTS tenant_id text NOT NULL DEFAULT 'xingchen';
+
+  CREATE INDEX IF NOT EXISTS idx_intake_requests_tenant      ON intake_requests      (tenant_id, ticket_no);
+  CREATE INDEX IF NOT EXISTS idx_approval_audit_logs_tenant  ON approval_audit_logs  (tenant_id, ticket_no);
+  CREATE INDEX IF NOT EXISTS idx_workflow_runs_tenant        ON workflow_runs        (tenant_id, ticket_no);
+  CREATE INDEX IF NOT EXISTS idx_erp_scraped_invoices_tenant ON erp_scraped_invoices (tenant_id, invoice_no);
 `;
 
 /**
@@ -234,6 +346,28 @@ const RESEARCH_REPORT_IMMUTABLE_TRIGGER_SQL = `
     FOR EACH ROW EXECUTE FUNCTION forbid_audit_log_mutation();
 `;
 
+/**
+ * Day 18 运行事件流水表只增不改触发器：workflow_events 禁止 UPDATE / DELETE
+ * （AGENTS.md 日志红线——审批流全过程留痕，切断不丢、篡改无效）
+ */
+const WORKFLOW_EVENT_IMMUTABLE_TRIGGER_SQL = `
+  DROP TRIGGER IF EXISTS workflow_events_immutable ON workflow_events;
+  CREATE TRIGGER workflow_events_immutable
+    BEFORE UPDATE OR DELETE ON workflow_events
+    FOR EACH ROW EXECUTE FUNCTION forbid_audit_log_mutation();
+`;
+
+/**
+ * Day 19 监控日志表只增不改触发器：monitor_logs 禁止 UPDATE / DELETE
+ * （AGENTS.md 日志红线——监控日志写入前已过 scrubPii 脱敏，落库后任何人不得篡改）
+ */
+const MONITOR_LOG_IMMUTABLE_TRIGGER_SQL = `
+  DROP TRIGGER IF EXISTS monitor_logs_immutable ON monitor_logs;
+  CREATE TRIGGER monitor_logs_immutable
+    BEFORE UPDATE OR DELETE ON monitor_logs
+    FOR EACH ROW EXECUTE FUNCTION forbid_audit_log_mutation();
+`;
+
 let schemaReady: Promise<void> | null = null;
 
 /**
@@ -245,6 +379,8 @@ export function ensureSchema(): Promise<void> {
       const sql = getClient();
       await sql.unsafe(CREATE_TABLES_SQL);
       await sql.unsafe(MIGRATE_MEMORY_COLUMNS_SQL);
+      // Day 27：多租户 tenant_id 列与复合索引（幂等；审计表加列与只增触发器互不影响）
+      await sql.unsafe(MIGRATE_TENANT_COLUMNS_SQL);
       await sql.unsafe(AUDIT_IMMUTABLE_TRIGGER_SQL);
       // llm_usage_logs 的触发器依赖 forbid_audit_log_mutation()（上面已创建），在其后挂载
       await sql.unsafe(LLM_LOG_IMMUTABLE_TRIGGER_SQL);
@@ -252,6 +388,13 @@ export function ensureSchema(): Promise<void> {
       await sql.unsafe(AGENT_TRACE_IMMUTABLE_TRIGGER_SQL);
       // research_reports 归档简报同样只增不改（Day 15）
       await sql.unsafe(RESEARCH_REPORT_IMMUTABLE_TRIGGER_SQL);
+      // workflow_events 审批流事件流水只增不改（Day 18）
+      await sql.unsafe(WORKFLOW_EVENT_IMMUTABLE_TRIGGER_SQL);
+      // Day 19：提示词版本种子（幂等）+ 激活兜底
+      await sql.unsafe(SEED_PROMPT_VERSIONS_SQL);
+      await sql.unsafe(SEED_PROMPT_ACTIVE_GUARD_SQL);
+      // monitor_logs 监控日志只增不改（Day 19）
+      await sql.unsafe(MONITOR_LOG_IMMUTABLE_TRIGGER_SQL);
     })().catch((err: unknown) => {
       schemaReady = null;
       throw err;

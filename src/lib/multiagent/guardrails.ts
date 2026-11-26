@@ -80,8 +80,10 @@ export interface OutputGuardResult {
   costUsd: number;
 }
 
-/** FIN-001 红线金额（「超过 50000」才触发，等于不触发——口径与 AGENTS.md 一致） */
-export const FIN001_THRESHOLD_CNY = 50000;
+/** FIN-001 红线金额（「超过 50000」才触发，等于不触发——口径与 AGENTS.md 一致）
+ *  Day 26 起为单点委托：真源在 src/lib/fin001.ts（其数据真源在 config/approval-policies.json），此处禁止副本 */
+export { FIN001_THRESHOLD_YUAN as FIN001_THRESHOLD_CNY } from "@/lib/fin001";
+import { FIN001_THRESHOLD_YUAN } from "@/lib/fin001";
 
 /** 自动处置类动词（退款承诺若叠加自动执行话术即越权——退款只能走既有正规通道） */
 const AUTO_REFUND_RE = /(?:自动|直接|即刻|马上|立即)(?:退还|退款|返款|退回|打款|付款|放款|到账)/;
@@ -127,7 +129,7 @@ export function runOutputGuard(text: string): OutputGuardResult {
   for (const sentence of sentences) {
     if (!AUTO_REFUND_RE.test(sentence)) continue;
     const overLine = extractAmountsCny(sentence).some(
-      (n) => n > FIN001_THRESHOLD_CNY,
+      (n) => n > FIN001_THRESHOLD_YUAN,
     );
     if (overLine) {
       violations.push({

@@ -16,6 +16,8 @@
  * 一、模拟只读快照（虚构演示数据；客户姓名已脱敏，无银行账号字段）
  * ================================================================ */
 
+import { FIN001_THRESHOLD_YUAN } from "@/lib/fin001";
+
 interface TicketSnapshot {
   ticketId: string;
   customerId: string;
@@ -594,9 +596,9 @@ function buildConclusion(state: AgentState, question: string): InvestigationConc
   const dupTotal = state.duplicateSuspectTotalCny;
   const merged = state.suspectedSplitMergedCny;
   const fin001 =
-    merged > 50000 ||
-    state.tickets.some((t) => t.amountCny > 50000) ||
-    state.billing.some((e) => e.direction === "debit" && e.amountCny > 50000);
+    merged > FIN001_THRESHOLD_YUAN ||
+    state.tickets.some((t) => t.amountCny > FIN001_THRESHOLD_YUAN) ||
+    state.billing.some((e) => e.direction === "debit" && e.amountCny > FIN001_THRESHOLD_YUAN);
 
   if (state.evidence.length === 0) {
     return {
@@ -654,7 +656,7 @@ function buildConclusion(state: AgentState, question: string): InvestigationConc
 
   // 通用异常盘点结论
   const openTickets = state.tickets.filter((t) => t.status !== "closed");
-  const overLine = state.tickets.filter((t) => t.amountCny > 50000);
+  const overLine = state.tickets.filter((t) => t.amountCny > FIN001_THRESHOLD_YUAN);
   return {
     headline:
       state.tickets.length > 0

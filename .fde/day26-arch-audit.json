@@ -1,0 +1,205 @@
+{
+  "auditedAt": "2026-11-26T12:41:48.657Z",
+  "targetDirectory": "src/ + app/（WorkBot 生产代码）",
+  "totalFilesScanned": 103,
+  "overallScore": 78,
+  "grade": "C (需局部手术)",
+  "baseline": {
+    "capturedAt": "Day 26 术前扫描",
+    "overallScore": 48,
+    "grade": "D (旧教条负债严重)",
+    "note": "术前：4 处业务规则硬编码散落在源码、4 把细碎查询工具、无外置策略配置"
+  },
+  "lightLegend": "🟢 GREEN ≥75 健康｜🟡 YELLOW 50~74 预警｜🔴 RED <50 病灶",
+  "dimensions": [
+    {
+      "id": "D1_ABSTRACTION",
+      "name": "架构粒度（反洋葱碎文件 / 反上帝文件）",
+      "score": 20,
+      "status": "RED",
+      "finding": "发现 15 个上帝文件（>600 行）与 6 个碎文件（<40 行）。最严重：app\\multimodal\\page.tsx（1458 行）——AI 修一个小需求要读完整个大文件，烧 3 倍输入 Token。",
+      "recommendation": "按垂直切片把上帝文件拆成 schema / 引擎 / 工具 / 测试四件套（每件 150~400 行）；碎文件就近合并进同意图邻居。",
+      "hits": [
+        {
+          "file": "app\\multimodal\\page.tsx",
+          "lines": 1458,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "app\\chat\\page.tsx",
+          "lines": 1352,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "src\\lib\\multiagent\\pipeline.ts",
+          "lines": 1117,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "src\\lib\\workbot\\unified-gateway.ts",
+          "lines": 990,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "app\\multi-agent\\page.tsx",
+          "lines": 855,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "src\\lib\\research-analyst\\engine.ts",
+          "lines": 827,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "src\\components\\genui\\ComponentRegistry.tsx",
+          "lines": 804,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "src\\lib\\ai\\react-agent.ts",
+          "lines": 796,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "src\\lib\\workbot\\eval-gate.ts",
+          "lines": 790,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "src\\lib\\workflow\\engine.ts",
+          "lines": 766,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "app\\workflows\\page.tsx",
+          "lines": 715,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "src\\lib\\raglab\\corpus.ts",
+          "lines": 684,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "app\\research-analyst\\page.tsx",
+          "lines": 655,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "app\\architecture-hub\\page.tsx",
+          "lines": 643,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "app\\observability\\page.tsx",
+          "lines": 624,
+          "rule": "上帝文件>600行"
+        },
+        {
+          "file": "src\\lib\\api-error.ts",
+          "lines": 22,
+          "rule": "碎文件<40行"
+        },
+        {
+          "file": "src\\lib\\workbot\\facade.ts",
+          "lines": 33,
+          "rule": "碎文件<40行"
+        },
+        {
+          "file": "app\\api\\external-logistics\\.well-known\\agent.json\\route.ts",
+          "lines": 16,
+          "rule": "碎文件<40行"
+        },
+        {
+          "file": "app\\api\\inngest\\route.ts",
+          "lines": 17,
+          "rule": "碎文件<40行"
+        },
+        {
+          "file": "app\\api\\mcp\\tasks\\[taskId]\\route.ts",
+          "lines": 34,
+          "rule": "碎文件<40行"
+        },
+        {
+          "file": "app\\layout.tsx",
+          "lines": 34,
+          "rule": "碎文件<40行"
+        }
+      ]
+    },
+    {
+      "id": "D2_EXTERNALIZED_RULES",
+      "name": "业务规则外置化（反硬编码 if/else）",
+      "score": 100,
+      "status": "GREEN",
+      "finding": "业务规则已全部外置到 config/approval-policies.json（纯数据），源码里零硬编码金额 / 汇率 / 区域条款。",
+      "recommendation": "维持「规则改 JSON、代码不动」的纪律；新增规则先问一句：这该不该是配置？",
+      "hits": []
+    },
+    {
+      "id": "D3_DETERMINISM_VS_PROMPT",
+      "name": "确定性边界（反万字大 Prompt）",
+      "score": 90,
+      "status": "GREEN",
+      "finding": "最大的提示词字面量约 105 Tokens（src\\db\\index.ts），在健康区间；金额算术与红线判定均由确定性代码承担，不靠提示词求模型自觉。",
+      "recommendation": "维持「提示词讲角色、代码守红线」的分工，新增规则优先写成函数而不是往提示词里堆字。",
+      "hits": [
+        {
+          "file": "src\\db\\index.ts",
+          "rule": "最大提示词字面量",
+          "count": 105
+        }
+      ]
+    },
+    {
+      "id": "D4_TOOL_COHESION",
+      "name": "工具内聚度（反细碎原子工具爆炸）",
+      "score": 92,
+      "status": "GREEN",
+      "finding": "服务端工具注册表共 3 把工具（≤6 健康线），按「单一业务意图」聚合，模型好选、说明书也轻。",
+      "recommendation": "维持意图级聚合；新增能力先问是否属于既有三意图之一，严禁再造瑞士军刀式 35 参数工具。",
+      "hits": [
+        {
+          "file": "src\\lib\\ai\\react-agent.ts",
+          "rule": "PROBE_REGISTRY 调查探针数（信息项）",
+          "count": 3
+        },
+        {
+          "file": "src\\lib\\chat-engine.ts",
+          "rule": "TOOL_REGISTRY 工具数",
+          "count": 3
+        }
+      ]
+    },
+    {
+      "id": "D5_EVAL_FEEDBACK_LOOP",
+      "name": "评测与反馈闭环（反「改完凭感觉」）",
+      "score": 90,
+      "status": "GREEN",
+      "finding": "评测反馈闭环就位：25 题黄金集 + CI 阻塞门禁（pnpm eval:ci） + 确定性策略引擎已挂载——任何重构跑一遍 25/25 全绿才准合入，红线被改坏会当场红灯。",
+      "recommendation": "维持纪律：任何规则 / 流程变更必须重考 25 题，红灯锁死合入。",
+      "hits": [
+        {
+          "file": "25 题黄金评测集（data/evals/golden-suite-v2.json）",
+          "rule": "就位",
+          "count": 1
+        },
+        {
+          "file": "CI 评测门禁（pnpm eval:ci → scripts/day25-eval-gate.ts）",
+          "rule": "就位",
+          "count": 1
+        },
+        {
+          "file": "外置策略配置（config/approval-policies.json）",
+          "rule": "就位",
+          "count": 1
+        },
+        {
+          "file": "确定性策略引擎 evaluateApprovalPolicy",
+          "rule": "就位",
+          "count": 1
+        }
+      ]
+    }
+  ]
+}

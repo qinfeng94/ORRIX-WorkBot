@@ -12,22 +12,29 @@
  */
 
 import { resolveA2aBearerToken } from "./external-logistics-agent";
+import { APPROVAL_POLICY } from "@/lib/policy/approval-policy";
 
 /* ================================================================
- * 一、常量与触发检测
+ * 一、常量与触发检测（数据真源：config/approval-policies.json 的 OPS-EAST-001 条款）
  * ================================================================ */
 
 /** 外部代理任务端点路径（与名片接口同源） */
 export const A2A_TASKS_PATH = "/api/external-logistics/a2a/tasks";
 
-/** 单次跨组织调用的超时熔断上限（毫秒） */
-export const A2A_TIMEOUT_MS = 2500;
+/** 单次跨组织调用的超时熔断上限（毫秒）——真源：配置 OPS-EAST-001.a2aVerifyTimeoutMs */
+export const A2A_TIMEOUT_MS = APPROVAL_POLICY.rules.find(
+  (r) => r.id === "OPS-EAST-001",
+)?.a2aVerifyTimeoutMs ?? 2500;
 
 /** 熔断器：连续失败达到该次数即打开 */
 export const A2A_CIRCUIT_THRESHOLD = 2;
 
 /** 熔断器打开后的冷却时长（毫秒），冷却结束自动半开 */
 export const A2A_CIRCUIT_COOLDOWN_MS = 30_000;
+
+/** OPS-EAST-001 条款（华东区物流报销条款，配置真源） */
+const EAST_RULE =
+  APPROVAL_POLICY.rules.find((r) => r.id === "OPS-EAST-001") ?? null;
 
 /** 跨组织委派的触发判定结果 */
 export interface A2aNeed {
@@ -41,18 +48,25 @@ export interface A2aNeed {
 
 /**
  * 触发检测（纯函数）：工单涉及华东区物流报销，或出现 EWB: 编号时，需要跨组织委派验真。
+ * 区域关键词 / 业务关键词 / EWB 编号格式全部来自 config/approval-policies.json。
  */
 export function detectA2aNeed(question: string): A2aNeed {
+  const ewbPattern = EAST_RULE?.ewbPattern ?? "^EWB[:：]?\\s*(\\d{3,8})$";
+  // 配置里是整串锚定格式，扫描场景去掉首尾锚定改为全局匹配
+  const scanRe = new RegExp(ewbPattern.replace(/^\^/, "").replace(/\$$/, ""), "g");
   const ewbIds = [
     ...new Set(
-      [...question.matchAll(/EWB[:：]\s*(\d{3,8})/g)].map((m) => `EWB:${m[1]}`),
+      [...question.matchAll(scanRe)].map((m) => `EWB:${m[1]}`),
     ),
   ];
   if (ewbIds.length > 0) {
     return { needed: true, ewbIds, trigger: "工单出现 EWB: 电子运单编号" };
   }
-  if (/华东/.test(question) && /(物流|报销|运费)/.test(question)) {
-    return { needed: true, ewbIds: [], trigger: "工单涉及华东区物流报销业务" };
+  const region = EAST_RULE?.regionKeyword ?? "华东";
+  const bizKeywords = EAST_RULE?.businessKeywords ?? ["物流", "报销", "运费"];
+  const triggerLabel = EAST_RULE?.triggerLabel ?? "华东区物流报销";
+  if (question.includes(region) && bizKeywords.some((k) => question.includes(k))) {
+    return { needed: true, ewbIds: [], trigger: `工单涉及${triggerLabel}业务` };
   }
   return { needed: false, ewbIds: [], trigger: "" };
 }

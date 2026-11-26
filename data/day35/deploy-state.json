@@ -1,0 +1,6 @@
+{
+  "currentImage": "workbot:v4.0.34-good",
+  "previousImage": "workbot:v4.0.35-bad",
+  "rolledBackAt": "2026-11-26T16:23:28.908Z",
+  "updatedAt": "2026-11-26T16:23:28.908Z"
+}

@@ -1,0 +1,47 @@
+# ============================================================
+# WorkBot 生产镜像构建剔除清单（Day 34）
+# 原则：源代码 + 运行时配置（config/、data/evals）进镜像；
+#       密钥 / 本地数据 / 开发产物一律物理剔除
+# ============================================================
+
+# —— 密钥与凭据（红线：API key / 连接串绝不进镜像）——
+.env*
+*.pem
+*.key
+
+# —— 依赖与构建产物（容器内重新安装 / 构建）——
+node_modules
+.next
+out
+.turbo
+
+# —— 本地开发数据库与运行数据目录（数据落卷不进镜像）——
+.pgdata
+backups
+
+# —— 版本库与开发工具链 ——
+.git
+.gitignore
+.vscode
+.idea
+.trae
+# .fde 契约文档不进镜像，仅放行 /arch-audit 页面运行时要读的两份体检产物
+.fde/*
+!.fde/day26-arch-audit.json
+!.fde/day26-migration-metrics.json
+brain
+docs
+tests
+scripts
+
+# —— 本地演习台账与临时文件（data/evals 是运行时评测数据，保留进镜像）——
+data/day*
+*.log
+*.tmp
+
+# —— 文档与无关文件 ——
+*.md
+ai_fde_40_v2_0.html
+Dockerfile
+docker-compose*.yml
+.dockerignore

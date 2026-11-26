@@ -15,8 +15,21 @@ import { after } from "next/server";
 import { NextResponse } from "next/server";
 import { desc, eq } from "drizzle-orm";
 import { ensureSchema, getDb } from "@/db";
-import { llmUsageLogs, memoryEpisodes, userPreferences } from "@/db/schema";
-import { classifyQuestion, FLOW_LABELS, runToolFlow } from "@/lib/chat-engine";
+import {
+  llmUsageLogs,
+  memoryEpisodes,
+  monitorLogs,
+  promptVersions,
+  userPreferences,
+} from "@/db/schema";
+import {
+  DEFAULT_PROMPT_CONTEXT,
+  classifyQuestion,
+  FLOW_LABELS,
+  runToolFlow,
+  type PromptVersionContext,
+} from "@/lib/chat-engine";
+import { assertScrubberHealthy, scrubPiiDetailed } from "@/lib/pii-scrubber";
 import {
   buildWorkingMemory,
   estimateTokens,
@@ -31,9 +44,18 @@ import {
   streamChat,
   type ProviderKey,
 } from "@/lib/llm/llm-client.mjs";
+import {
+  buildSystemPrompt,
+  loadTenantConfig,
+  TENANT_ID_PATTERN,
+  type TenantConfig,
+} from "@/lib/ontology/tenant-config";
 
 // 注：本项目 next.config.ts 开启 cacheComponents，路由段不可再声明 runtime/maxDuration
 // （默认即 Node.js 运行时）。
+
+// Day 19 启动自检：脱敏工具核心用例任一失败即拒绝服务（PII 防线必须先证明自己健康）
+assertScrubberHealthy();
 
 /** 主模型选择：自动容灾默认 Claude 主、OpenAI 备；其余选项主备对调 */
 function resolvePrimary(selector: string): ProviderKey {
@@ -49,6 +71,8 @@ interface ChatRequestBody {
   userKey: string;
   /** 历史已完成对话轮次（工作记忆滑动窗口的输入） */
   history: ChatRound[];
+  /** 租户 ID（Day 27 多租户；缺省 = 默认租户 xingchen） */
+  tenantId?: string;
 }
 
 /** 请求体内历史轮次消毒：只收干净的 {user, assistant} 字符串，防脏数据膨胀 */
@@ -77,6 +101,21 @@ export async function POST(request: Request): Promise<Response> {
   const simulateOutage = body.simulateOutage === true;
   const sessionId = String(body.sessionId ?? "").slice(0, 64);
   const userKey = String(body.userKey ?? "").trim().slice(0, 64) || "demo-林总";
+
+  // Day 27 多租户：租户 ID 白名单校验（fail-closed）+ 配置加载（提示词/部门/门槛真源）
+  const tenantId = String(body.tenantId ?? "").trim() || "xingchen";
+  if (!TENANT_ID_PATTERN.test(tenantId)) {
+    return NextResponse.json({ error: "租户 ID 非法。" }, { status: 400 });
+  }
+  let tenantCfg: TenantConfig;
+  try {
+    tenantCfg = await loadTenantConfig(tenantId);
+  } catch {
+    return NextResponse.json(
+      { error: `租户配置不存在或非法：${tenantId}（fail-closed，拒绝兜底）。` },
+      { status: 400 },
+    );
+  }
   const history = sanitizeHistory(body.history);
 
   // 密钥只在这里（服务端内存）读取，绝不进入响应体，绝不打印
@@ -97,8 +136,26 @@ export async function POST(request: Request): Promise<Response> {
   let semanticStyle = "";
   let enabledFacts: string[] = [];
   let enabledEpisodes: { content: string; ticketRefs: string }[] = [];
+  /** Day 19：激活的提示词版本（数据库未接入时降级 v1.0 稳定口径） */
+  let promptContext: PromptVersionContext = DEFAULT_PROMPT_CONTEXT;
+  let promptContent = "";
   try {
     await ensureSchema();
+    // Day 19：读取当前激活的提示词版本（热回滚后下一次对话立即换版，无需重新部署）
+    const promptRows = await getDb()
+      .select()
+      .from(promptVersions)
+      .where(eq(promptVersions.isActive, true))
+      .limit(1);
+    if (promptRows[0]) {
+      promptContext = { version: promptRows[0].version, faulty: promptRows[0].isFaulty };
+      // Day 27 提示词真源切换：稳定版文案从租户配置文件动态渲染（公司名/门槛/审批人
+      // 全部租户化，不再写死）；prompt_versions 表只保留版本开关与演练标记。
+      // 故障演练版保持 DB 内容不变（演练语义必须与 Day 19 验收考卷完全一致）。
+      promptContent = promptRows[0].isFaulty
+        ? promptRows[0].content
+        : buildSystemPrompt(tenantCfg);
+    }
     const prefRows = await getDb()
       .select()
       .from(userPreferences)
@@ -126,8 +183,14 @@ export async function POST(request: Request): Promise<Response> {
     // 记忆读取失败不阻塞对话（如数据库未接入）：三层记忆静默降级为纯滑窗
   }
 
-  /** 组装发送给模型的 messages：语义记忆 → 情景记忆 → 前情摘要 → 保留原文 → 当前提问 */
+  /** 组装发送给模型的 messages：核心提示词 → 语义记忆 → 情景记忆 → 前情摘要 → 保留原文 → 当前提问 */
   const composedMessages: { role: "user" | "assistant"; content: string }[] = [];
+  if (promptContent.length > 0) {
+    composedMessages.push({
+      role: "user",
+      content: `[核心提示词 ${promptContext.version}] ${promptContent}`,
+    });
+  }
   const prefParts = [
     semanticDisplayName ? `称呼：${semanticDisplayName}` : "",
     semanticDepartment ? `常关注部门：${semanticDepartment}` : "",
@@ -207,8 +270,8 @@ export async function POST(request: Request): Promise<Response> {
           contextBudget: CONTEXT_BUDGET_TOKENS,
         });
 
-        // 第一段：工具链直播（tool_start / tool_result / dry_run_required）
-        const { replyText } = runToolFlow(flow, send);
+        // 第一段：工具链直播（tool_start / tool_result / dry_run_required）；提示词版本决定行为口径
+        const { replyText } = runToolFlow(flow, send, promptContext);
 
         // 第二段：大模型流式答复（text_delta*），主厂商 429/503 时秒切备用（fallback_notice）
         const result = await streamChat({
@@ -296,6 +359,12 @@ export async function POST(request: Request): Promise<Response> {
 
   // 记账兜底：响应结束后（含客户端中途断开）必须写入 llm_usage_logs，防 Vercel 冻结丢账
   after(async () => {
+    // Day 19 PII 脱敏咽喉：请求与响应在写任何监控日志 / 记忆表之前，强制先过确定性脱敏。
+    // 脱敏后的文本同时喂给情景记忆提取——记忆表同样绝不存 PII 明文。
+    const reqScrub = scrubPiiDetailed(question);
+    const resScrub = scrubPiiDetailed(finalReplyText);
+    const piiRedactions = reqScrub.stats.total + resScrub.stats.total;
+
     if (usageRecord) {
       try {
         await ensureSchema();
@@ -322,12 +391,33 @@ export async function POST(request: Request): Promise<Response> {
       }
     }
 
+    // Day 19 监控日志：脱敏后的请求 / 响应原文落 monitor_logs（只增不改），PII 拦截数一并留痕
+    try {
+      await ensureSchema();
+      await getDb().insert(monitorLogs).values({
+        source: "chat",
+        sessionId,
+        questionLabel,
+        promptVersion: promptContext.version,
+        requestText: reqScrub.text,
+        responseText: resScrub.text,
+        piiRedactions,
+        latencyMs: usageRecord?.totalMs ?? 0,
+      });
+    } catch (err: unknown) {
+      console.error(
+        "[monitor_logs] 监控日志写入失败（不阻塞对话）：",
+        err instanceof Error ? err.message : err,
+      );
+    }
+
     // Day 9 三层记忆持久化：情景记忆提取 + 语义记忆部门偏好学习（失败不阻塞）
     try {
       await ensureSchema();
 
-      // ② 情景记忆：命中工单/客户/审批单号才写一条（确定性规则，不用大模型）
-      const episode = extractEpisode(question, finalReplyText);
+      // ② 情景记忆：命中工单/客户/审批单号才写一条（确定性规则，不用大模型）；
+      //    输入是脱敏后的文本，记忆表绝不存 PII 明文（Day 19）
+      const episode = extractEpisode(reqScrub.text, resScrub.text);
       if (episode) {
         await getDb().insert(memoryEpisodes).values({
           sessionId,
@@ -344,7 +434,7 @@ export async function POST(request: Request): Promise<Response> {
         .where(eq(userPreferences.userKey, userKey))
         .limit(1);
       const prev = prevPrefRows[0] ?? { department: "", facts: [] as string[] };
-      const learned = learnPreference(prev, flow);
+      const learned = learnPreference(prev, flow, tenantCfg.flowDepartments);
       await getDb()
         .insert(userPreferences)
         .values({

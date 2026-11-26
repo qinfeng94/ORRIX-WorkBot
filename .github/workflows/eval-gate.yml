@@ -1,0 +1,52 @@
+name: Eval Gate
+
+# Day 25 收官闭环 · 黄金评测门禁
+# 任何推送 / PR 必须通过 25 题 4 层考卷：前 3 层（安全 / 算术 / 双商容灾）100% 强制阻塞，
+# 第 4 层 AutoSxS 胜率 ≥ 80% 放行；红灯即退出码 1，并上传失败派单简报供 AI 读简报修复。
+# 红线：CI 只跑只读评测，无任何打款 / 写业务数据动作。
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+
+jobs:
+  eval-gate:
+    name: 黄金评测门禁（25 题 4 层）
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 安装 pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.5.2
+
+      - name: 安装 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: 安装依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 类型检查（tsc --noEmit 零错误）
+        run: pnpm typecheck
+
+      - name: 黄金评测门禁（全量 25 题，红灯退出码 1）
+        run: pnpm eval:ci
+
+      - name: 上传考卷产物（门禁报告 / 失败派单简报 / AutoSxS 报告）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-gate-artifacts
+          path: |
+            data/evals/gate-report.json
+            data/evals/failure-briefs.json
+            data/evals/autosxs-report.json
+          if-no-files-found: warn
+          retention-days: 30

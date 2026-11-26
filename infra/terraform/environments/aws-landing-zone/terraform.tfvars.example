@@ -1,0 +1,14 @@
+###############################################################################
+# aws-landing-zone 变量示例（复制为 terraform.tfvars 后按需修改；严禁把真实密钥写进 tfvars）
+###############################################################################
+
+# 统一变量（三套环境同名）
+project_name                 = "workbot"
+environment                  = "aws-landing-zone"
+private_subnet_cidrs         = ["10.40.1.0/24", "10.40.2.0/24"]
+database_publicly_accessible = false # GATE-2：写 true 会被门禁拦截
+log_encryption_kms_key_ref   = "arn:aws:kms:us-east-1:123456789012:key/00000000-1111-2222-3333-444444444444" # 替换为你的 KMS ARN
+
+# 本环境专属
+aws_region = "us-east-1"
+vpc_cidr   = "10.40.0.0/16"

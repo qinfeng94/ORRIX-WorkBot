@@ -1,0 +1,18 @@
+###############################################################################
+# gcp-landing-zone 变量示例（复制为 terraform.tfvars 后按需修改；严禁把真实密钥写进 tfvars）
+###############################################################################
+
+# 统一变量（三套环境同名）
+project_name                 = "workbot"
+environment                  = "gcp-landing-zone"
+private_subnet_cidrs         = ["10.50.1.0/24", "10.50.2.0/24"]
+database_publicly_accessible = false # GATE-2：写 true 会被门禁拦截
+log_encryption_kms_key_ref   = "projects/my-project/locations/global/keyRings/workbot/cryptoKeys/audit-logs" # 替换为你的 CMEK 路径
+
+# 本环境专属
+gcp_project = "my-project-id"
+gcp_region  = "asia-east1"
+
+# VPC-SC 可选（填上即启用服务边界）
+organization_id     = "" # 例如 "123456789012"
+gcp_project_number  = "" # 例如 "987654321098"

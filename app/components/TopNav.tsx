@@ -12,11 +12,24 @@ const NAV_ITEMS = [
   { href: "/", label: "工单协同台" },
   { href: "/chat", label: "对话工作台" },
   { href: "/studio", label: "生成式 UI" },
+  { href: "/config-studio", label: "配置工作台" },
   { href: "/investigate", label: "调查引擎" },
   { href: "/multi-agent", label: "客服专班" },
   { href: "/rag-lab", label: "检索实验室" },
   { href: "/browser-lab", label: "浏览器实验室" },
   { href: "/research-analyst", label: "尽调研究台" },
+  { href: "/multimodal", label: "多模态工作台" },
+  { href: "/extraction", label: "单据抽取台" },
+  { href: "/doc-intake", label: "文档接入台" },
+  { href: "/channels", label: "全渠道网关" },
+  { href: "/workflows", label: "持久审批流" },
+  { href: "/fleet", label: "代理军团" },
+  { href: "/architecture-hub", label: "架构中心" },
+  { href: "/observability", label: "生产可观测" },
+  { href: "/queue-lab", label: "并发压测台" },
+  { href: "/security-range", label: "红队靶场" },
+  { href: "/eval-loop", label: "评测门禁" },
+  { href: "/arch-audit", label: "架构体检" },
 ] as const;
 
 export default function TopNav() {
@@ -24,14 +37,14 @@ export default function TopNav() {
 
   return (
     <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/90 backdrop-blur">
-      <nav className="mx-auto flex h-14 w-full max-w-6xl items-center justify-between px-4 sm:px-6">
+      <nav className="mx-auto flex min-h-14 w-full max-w-6xl flex-wrap items-center justify-between gap-y-1 px-4 py-1.5 sm:px-6">
         <Link href="/" className="flex items-center gap-2 font-bold tracking-tight">
           <span className="grid h-7 w-7 place-items-center rounded-lg bg-zinc-900 text-sm text-white">
             星
           </span>
           <span>星辰 WorkBot</span>
         </Link>
-        <div className="flex items-center gap-1">
+        <div className="flex flex-wrap items-center gap-1">
           {NAV_ITEMS.map((item) => {
             const active =
               item.href === "/"

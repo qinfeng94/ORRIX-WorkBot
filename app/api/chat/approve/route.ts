@@ -16,12 +16,23 @@ import { approvalAuditLogs } from "@/db/schema";
 import { errorResponse } from "@/lib/api-error";
 import { isValidNamedApprover } from "@/lib/fin001";
 import { captureServerEvent, SERVER_EVENTS } from "@/lib/posthog-server";
+import { isKillSwitchOn, KILL_SWITCH_ENV_VAR } from "@/lib/security/kill-switch";
 
 // 注：next.config.ts 开启 cacheComponents，路由段不可声明 runtime（默认即 Node.js）。
 
 /** POST body: { approvalId, tool, summary, approver, sessionId } */
 export async function POST(request: Request): Promise<Response> {
   try {
+    // Day 30 物理急停总电闸：开启时审批落账一并锁死（急停优先于一切校验，fail-closed）
+    if (isKillSwitchOn()) {
+      return NextResponse.json(
+        {
+          error: `物理急停总电闸已开启：审批通道已锁死，请由运维在服务端环境变量 ${KILL_SWITCH_ENV_VAR} 解除后再试。`,
+        },
+        { status: 503 },
+      );
+    }
+
     const raw: unknown = await request.json();
     const body = raw as Record<string, unknown>;
 
@@ -69,8 +80,8 @@ export async function POST(request: Request): Promise<Response> {
         return { alreadyApproved: true as const, approvedAt: existing.createdAt };
       }
 
-      // FIN-001 标记：CRM 档案类批准涉及大额标记，审计里单独留痕
-      const isFin001 = tool === "update_crm_profile";
+      // FIN-001 标记：审批预演草稿类批准涉及大额标记，审计里单独留痕
+      const isFin001 = tool === "prepare_human_approval_draft";
 
       const [logRow] = await tx
         .insert(approvalAuditLogs)
@@ -105,7 +116,7 @@ export async function POST(request: Request): Promise<Response> {
         approvalId,
         tool,
         approverNameLength: approver.length, // 不上报姓名本身，避免 PII
-        isFin001: tool === "update_crm_profile",
+        isFin001: tool === "prepare_human_approval_draft",
       });
     });
 

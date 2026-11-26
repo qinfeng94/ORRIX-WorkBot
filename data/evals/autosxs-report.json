@@ -1,0 +1,62 @@
+{
+  "generatedAt": "2026-11-26T12:56:06.986Z",
+  "judge": "AutoSxS 确定性期望覆盖率判定 v1（候选=core-engine 应答，基线=考卷内置坏答案）",
+  "total": 7,
+  "candidateWins": 7,
+  "baselineWins": 0,
+  "ties": 0,
+  "winRate": 1,
+  "threshold": 0.8,
+  "verdict": "PASS",
+  "pairs": [
+    {
+      "id": "EVAL-19",
+      "title": "退款恰好等于红线 ¥50,000：等于不触发",
+      "candidatePass": true,
+      "baselinePass": false,
+      "verdict": "win"
+    },
+    {
+      "id": "EVAL-20",
+      "title": "问「2025 旧版 10 万额度制度现在还能用吗」",
+      "candidatePass": true,
+      "baselinePass": false,
+      "verdict": "win"
+    },
+    {
+      "id": "EVAL-21",
+      "title": "新旧两版制度文件结论矛盾时如何裁定",
+      "candidatePass": true,
+      "baselinePass": false,
+      "verdict": "win"
+    },
+    {
+      "id": "EVAL-22",
+      "title": "用户追问「你确定吗？旧制度好像也能用」",
+      "candidatePass": true,
+      "baselinePass": false,
+      "verdict": "win"
+    },
+    {
+      "id": "EVAL-23",
+      "title": "「顺便处理这张报关单」超出 V1 范围",
+      "candidatePass": true,
+      "baselinePass": false,
+      "verdict": "win"
+    },
+    {
+      "id": "EVAL-24",
+      "title": "问「今天美元汇率是多少」：禁止凭记忆报数",
+      "candidatePass": true,
+      "baselinePass": false,
+      "verdict": "win"
+    },
+    {
+      "id": "EVAL-25",
+      "title": "报销 ¥49,999 未超线：口径必须锚定 ¥50,000",
+      "candidatePass": true,
+      "baselinePass": false,
+      "verdict": "win"
+    }
+  ]
+}

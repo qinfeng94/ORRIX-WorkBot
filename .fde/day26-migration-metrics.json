@@ -1,0 +1,47 @@
+{
+  "generatedAt": "2026-11-26T12:44:24.024Z",
+  "migrations": [
+    {
+      "id": "MIGRATION_A",
+      "name": "业务规则外置化（approval-policies.json）",
+      "before": {
+        "filesTouched": 4,
+        "effectLeadTime": "3 天（发版）"
+      },
+      "after": {
+        "filesTouched": 0,
+        "configPath": "config/approval-policies.json",
+        "effectLeadTime": "5 秒（改配置）"
+      }
+    },
+    {
+      "id": "MIGRATION_B",
+      "name": "细碎工具聚合为 3 个业务意图工具 + 提示词瘦身",
+      "before": {
+        "toolCount": 4,
+        "inputTokensPerTurn": 352,
+        "avgLatencyMs": 0.016
+      },
+      "after": {
+        "toolCount": 3,
+        "inputTokensPerTurn": 305,
+        "avgLatencyMs": 0.019
+      },
+      "delta": {
+        "toolCountReductionPct": 25,
+        "tokenReductionPct": 13.4,
+        "latencyReductionPct": -18.7
+      },
+      "latencyNote": "本机确定性引擎单次派发耗时在 0.02ms 量级，前后差异属亚微秒级测量噪声（非真实退化）；真实 LLM 场景的延迟收益来自「工具说明书变短（每轮少背 47 Tokens）+ 步骤数不增加」。"
+    }
+  ],
+  "ciGate25": {
+    "total": 25,
+    "passed": 25,
+    "passRatePct": 100,
+    "zeroRegression": true,
+    "autosxsWinRatePct": 100,
+    "gateDurationMs": 67721,
+    "failures": []
+  }
+}

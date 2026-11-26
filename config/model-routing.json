@@ -1,0 +1,67 @@
+{
+  "version": "2026-11-26",
+  "description": "Day 24 双供应商动态路由：简单分类走快模型、复杂财务推理走旗舰模型；主备热切 + 熔断（连续 3 次失败 → 断路 60 秒）。网关全程只读 + 起草，红区物理隔离，本配置不含任何打款类动作。",
+  "circuitBreaker": {
+    "failureThreshold": 3,
+    "cooldownMs": 60000,
+    "halfOpenProbe": true,
+    "note": "连续 failureThreshold 次失败自动熔断；冷却 cooldownMs 后进入半开，放行一次探测请求，成功则闭合恢复主厂商，失败则重新熔断一个冷却周期"
+  },
+  "providers": {
+    "claude": {
+      "providerId": "anthropic",
+      "label": "Anthropic Claude",
+      "flagshipModel": "claude-sonnet-5",
+      "fastModel": "claude-haiku-4",
+      "priceInPerM": 3,
+      "priceOutPerM": 15,
+      "sim": { "connectMs": [45, 110], "ttftMs": [340, 640], "charMs": [14, 30] }
+    },
+    "openai": {
+      "providerId": "openai",
+      "label": "OpenAI GPT",
+      "flagshipModel": "gpt-5.1",
+      "fastModel": "gpt-5.1-mini",
+      "priceInPerM": 1.25,
+      "priceOutPerM": 10,
+      "sim": { "connectMs": [25, 70], "ttftMs": [210, 430], "charMs": [8, 20] }
+    }
+  },
+  "routing": {
+    "fast": {
+      "label": "简单分类档（快模型）",
+      "usage": "意图识别 / 话术润色 / 日常问答",
+      "primary": "openai",
+      "backup": "claude",
+      "modelSlot": "fastModel",
+      "effort": "low"
+    },
+    "flagship": {
+      "label": "复杂财务推理档（旗舰模型）",
+      "usage": "对账核差 / FIN-001 合规判断 / 大额工单推理",
+      "primary": "claude",
+      "backup": "openai",
+      "modelSlot": "flagshipModel",
+      "effort": "high"
+    }
+  },
+  "classifier": {
+    "amountThreshold": 50000,
+    "complexKeywords": ["FIN-001", "审批", "发票", "对账", "应收", "退款", "错账", "差额", "合规", "审计", "坏账", "账龄"],
+    "note": "金额判定口径与 FIN-001 一致：严格「超过」50000 才升格旗舰档，等于 50000 不触发"
+  },
+  "cache": {
+    "enabled": true,
+    "maxEntries": 128,
+    "note": "完全相同问题 + 相同角色才命中；命中后跳过网络/向量/ACL/生成全链路，只保留解析层"
+  },
+  "layers": [
+    { "key": "network", "label": "网络连接" },
+    { "key": "parse", "label": "解析/分类" },
+    { "key": "vector", "label": "向量化" },
+    { "key": "acl", "label": "ACL 检索" },
+    { "key": "ttft", "label": "首字延迟" },
+    { "key": "generation", "label": "生成速率" },
+    { "key": "cache", "label": "缓存命中" }
+  ]
+}
