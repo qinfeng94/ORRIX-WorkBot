@@ -1,0 +1,2 @@
+{"ts":"2026-11-25T17:25:47.078Z","event":"llm_call","providerId":"openai","model":"gpt-5.1","mode":"offline-sim","effort":"medium","ttftMs":568,"totalMs":2104,"inputTokens":24,"outputTokens":93,"usdCost":0.00096,"wasFallback":true,"simulatedOutage":true}
+{"ts":"2026-11-25T17:25:54.035Z","event":"llm_call","providerId":"openai","model":"gpt-5.1","mode":"offline-sim","effort":"high","ttftMs":572,"totalMs":2138,"inputTokens":24,"outputTokens":93,"usdCost":0.00096,"wasFallback":false,"simulatedOutage":false}
